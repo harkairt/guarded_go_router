@@ -1,0 +1,25 @@
+name: guarded_go_router
+description: guarded_go_router
+version: 0.0.1
+
+environment:
+  sdk: ">=2.19.6 <3.0.0"
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  freezed_annotation: ^2.2.0
+  go_router: ^7.1.1
+  hooks_riverpod: ^2.1.3
+  uni_links: ^0.5.1
+
+dev_dependencies:
+  flutter_lints: ^2.0.0
+  flutter_test:
+    sdk: flutter
+  integration_test:
+  lint: ^2.0.1
+  mocktail: ^0.3.0
+
+flutter:
