@@ -27,6 +27,8 @@ class DeepLinkHandler extends HookConsumerWidget {
         if (initialUri != null) {
           goRouter.go(initialUri.toString());
         }
+
+        return;
       },
     );
     useEffectOnce(

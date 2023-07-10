@@ -28,7 +28,7 @@ TransitionBuilder get bottomUpTrainsitionBuilder => (context, animation, seconda
       );
     };
 
-Page buildPageWithTransition<T>({
+Page<T> buildPageWithTransition<T>({
   required BuildContext context,
   required GoRouterState state,
   required Widget child,
@@ -51,7 +51,7 @@ Page buildPageWithTransition<T>({
   );
 }
 
-Page buildDefaultTransitionPage<T>({
+Page<T> buildDefaultTransitionPage<T>({
   required BuildContext context,
   required GoRouterState state,
   required Widget child,
@@ -63,7 +63,7 @@ Page buildDefaultTransitionPage<T>({
       transitionBuilder: fadeTrainsitionBuilder,
     );
 
-Page buildFullScreenDialogPage<T>({
+Page<T> buildFullScreenDialogPage<T>({
   required BuildContext context,
   required GoRouterState state,
   required Widget child,

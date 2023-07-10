@@ -44,7 +44,7 @@ void usePlainPostFrameEffect(void Function() effect, [List<Object?>? keys]) => u
       keys,
     );
 
-void usePlainAsyncEffect(Future Function() effect) {
+void usePlainAsyncEffect(Future<Object?> Function() effect) {
   useAsyncEffect(
     () async {
       await effect();

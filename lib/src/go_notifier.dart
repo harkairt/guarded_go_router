@@ -4,7 +4,7 @@ import 'package:guarded_go_router/src/utils.dart';
 
 class GoNotifier extends ChangeNotifier {
   final Ref _ref;
-  final List<AlwaysAliveProviderListenable> dependencies;
+  final List<AlwaysAliveProviderListenable<Object>> dependencies;
   final bool debugLog;
 
   GoNotifier(
