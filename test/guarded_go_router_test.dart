@@ -26,6 +26,12 @@ class Guard4 extends Mock implements GoGuard {}
 
 Widget simpleBuilder(BuildContext context, GoRouterState state) => Container();
 
+extension GoRouterX on GoRouter {
+  String get location {
+    return routeInformationProvider.value.uri.toString();
+  }
+}
+
 void main() {
   late final ChangeNotifier refreshListenable;
 
@@ -227,10 +233,10 @@ void main() {
                       "super-premium-content",
                       followUp: [Guard2],
                     ),
-                  ])
+                  ]),
                 ]),
               ],
-            )
+            ),
           ]),
         ]),
       ]),
@@ -372,6 +378,7 @@ void main() {
 
           router.goNamed("3");
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/root/1/2/3");
         });
       });
@@ -416,6 +423,7 @@ void main() {
 
             router.goNamed("3");
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/followUp1");
           });
         });
@@ -462,13 +470,13 @@ void main() {
                               routes: [
                                 _goRoute("3"),
                               ],
-                            )
+                            ),
                           ]),
                         ],
                       ),
                     ]),
                   ],
-                )
+                ),
               ]),
               _goRoute("followUp1", followUp: [Guard1]),
               _goRoute("followUp2", followUp: [Guard2]),
@@ -477,6 +485,7 @@ void main() {
 
           router.goNamed("3");
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/root/1/2/3");
         });
       });
@@ -511,7 +520,7 @@ void main() {
                                 _goRoute("3"),
                               ],
                             ),
-                          ])
+                          ]),
                         ],
                       ),
                     ]),
@@ -524,6 +533,7 @@ void main() {
 
             router.goNamed("3");
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/followUp1");
           });
         });
@@ -577,12 +587,12 @@ void main() {
                               routes: [
                                 _guardShell<Guard3>([
                                   _goRoute("3"),
-                                ])
+                                ]),
                               ],
                             ),
-                          ])
+                          ]),
                         ],
-                      )
+                      ),
                     ]),
                   ],
                 ),
@@ -591,6 +601,7 @@ void main() {
 
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/shield2?continue=/root/1/2/3?continue=/route");
           });
 
@@ -620,12 +631,12 @@ void main() {
                                   _goRoute(
                                     "3",
                                   ),
-                                ])
+                                ]),
                               ],
                             ),
-                          ])
+                          ]),
                         ],
-                      )
+                      ),
                     ]),
                   ],
                 ),
@@ -634,6 +645,7 @@ void main() {
 
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/shield2?continue=/root/1/2/3?continue=/route");
           });
 
@@ -663,12 +675,12 @@ void main() {
                                     ignoreAsContinueLocation: true,
                                     "3",
                                   ),
-                                ])
+                                ]),
                               ],
                             ),
-                          ])
+                          ]),
                         ],
-                      )
+                      ),
                     ]),
                   ],
                 ),
@@ -677,6 +689,7 @@ void main() {
 
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/shield2?continue=/route");
           });
 
@@ -705,12 +718,12 @@ void main() {
                                   [
                                     _goRoute("3"),
                                   ],
-                                )
+                                ),
                               ],
                             ),
-                          ])
+                          ]),
                         ],
-                      )
+                      ),
                     ]),
                   ],
                 ),
@@ -719,6 +732,7 @@ void main() {
 
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/shield2?continue=/route");
           });
           testWidgets(
@@ -750,12 +764,12 @@ void main() {
                               routes: [
                                 _guardShell<Guard3>([
                                   _goRoute("3"),
-                                ])
+                                ]),
                               ],
                             ),
-                          ])
+                          ]),
                         ],
-                      )
+                      ),
                     ]),
                   ],
                 ),
@@ -764,6 +778,7 @@ void main() {
 
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/shield2?continue=/route");
           });
         });
@@ -801,12 +816,12 @@ void main() {
                             routes: [
                               _guardShell<Guard3>([
                                 _goRoute("3"),
-                              ])
+                              ]),
                             ],
                           ),
-                        ])
+                        ]),
                       ],
-                    )
+                    ),
                   ]),
                 ],
               ),
@@ -815,6 +830,7 @@ void main() {
 
           router.goNamed("3");
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/root/1/2/3");
         });
 
@@ -826,6 +842,7 @@ void main() {
               _goRoute("shield1", shieldOf: [Guard1]),
               _goRoute("shield2", shieldOf: [Guard2]),
               _goRoute("shield3", shieldOf: [Guard3]),
+              _goRoute("route"),
               _goRoute(
                 "root",
                 routes: [
@@ -839,12 +856,12 @@ void main() {
                             routes: [
                               _guardShell<Guard3>([
                                 _goRoute("3"),
-                              ])
+                              ]),
                             ],
                           ),
-                        ])
+                        ]),
                       ],
-                    )
+                    ),
                   ]),
                 ],
               ),
@@ -853,6 +870,7 @@ void main() {
 
           router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/route");
         });
       });
@@ -898,6 +916,7 @@ void main() {
 
           router.goNamed("multi-shield", queryParameters: <String, dynamic>{"continue": "/route"});
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/root/multi-shield?continue=/route");
         });
       });
@@ -934,6 +953,7 @@ void main() {
 
             router.goNamed("multi-shield", queryParameters: <String, dynamic>{"continue": "/route"});
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/route");
           });
           testWidgets('even when a guard has followUp', (WidgetTester tester) async {
@@ -958,6 +978,7 @@ void main() {
 
             router.goNamed("multi-shield", queryParameters: <String, dynamic>{"continue": "/route"});
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/route");
           });
         });
@@ -983,6 +1004,7 @@ void main() {
 
             router.goNamed("multi-shield");
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/followUp1");
           });
           testWidgets('when no guard has followUp then stay', (WidgetTester tester) async {
@@ -1006,6 +1028,7 @@ void main() {
 
             router.goNamed("multi-shield");
 
+            await tester.pumpAndSettle();
             expect(router.location.sanitized, "/root/multi-shield");
           });
         });
@@ -1025,6 +1048,7 @@ void main() {
             routes: routeTree,
           );
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/login?continue=/app/dash");
         });
 
@@ -1039,6 +1063,7 @@ void main() {
             routes: routeTree,
           );
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
         });
 
@@ -1053,6 +1078,7 @@ void main() {
             initialLocation: "/app/dash",
             routes: routeTree,
           );
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/onboard?continue=/app/dash");
         });
 
@@ -1070,6 +1096,7 @@ void main() {
             routes: routeTree,
           );
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/app/dash");
         });
       });
@@ -1082,6 +1109,7 @@ void main() {
             routes: routeTree,
           );
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/login?continue=/app/dash");
         });
 
@@ -1098,6 +1126,7 @@ void main() {
             routes: routeTree,
           );
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/app/dash");
         });
       });
@@ -1112,6 +1141,7 @@ void main() {
 
           router.goNamed("me");
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/login?continue=/app/me");
         });
 
@@ -1127,6 +1157,7 @@ void main() {
 
           router.goNamed("me");
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/me");
         });
 
@@ -1143,6 +1174,7 @@ void main() {
 
           router.goNamed("me");
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/onboard?continue=/app/me");
         });
 
@@ -1160,6 +1192,7 @@ void main() {
 
           router.goNamed("me");
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/app/me");
         });
 
@@ -1173,14 +1206,19 @@ void main() {
             routes: routeTree,
           );
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/login?continue=/app/dash");
           router.goNamed("me");
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/login?continue=/app/me");
           deactivateGuard(guard: authGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/me");
           deactivateGuard(guard: pinGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/onboard?continue=/app/me");
           deactivateGuard(guard: onboardGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/app/me");
         });
 
@@ -1192,14 +1230,19 @@ void main() {
             routes: routeTree,
           );
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/login?continue=/app/dash");
           router.go("/app/me?foo=bar");
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/login?continue=/app/me?foo=bar");
           deactivateGuard(guard: authGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
           deactivateGuard(guard: pinGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/onboard?continue=/app/me?foo=bar");
           deactivateGuard(guard: onboardGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/app/me?foo=bar");
         });
       });
@@ -1218,6 +1261,7 @@ void main() {
 
           activateGuard(guard: pinGuard);
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
         });
 
@@ -1238,6 +1282,7 @@ void main() {
             activateGuard(guard: pinGuard);
           });
 
+          await tester.pumpAndSettle();
           expect(router.goRouter.location.sanitized, "/auth/pin?foo=bar");
         });
 
@@ -1259,6 +1304,7 @@ void main() {
             activateGuard(guard: pinGuard);
           });
 
+          await tester.pumpAndSettle();
           expect(router.goRouter.location.sanitized, "/auth/pin?foo=bar");
         });
 
@@ -1276,8 +1322,10 @@ void main() {
           );
 
           activateGuard(guard: pinGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
           activateGuard(guard: authGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/login?continue=/app/me?foo=bar");
         });
 
@@ -1294,8 +1342,10 @@ void main() {
           );
 
           activateGuard(guard: pinGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
           activateGuard(guard: onboardGuard);
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
         });
       });
@@ -1313,6 +1363,7 @@ void main() {
 
           deactivateGuard(guard: authGuard);
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
         });
 
@@ -1328,6 +1379,7 @@ void main() {
 
           deactivateGuard(guard: authGuard);
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
         });
 
@@ -1345,6 +1397,7 @@ void main() {
 
           deactivateGuard(guard: authGuard);
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin?continue=/app/me");
         });
 
@@ -1361,6 +1414,7 @@ void main() {
 
           deactivateGuard(guard: pinGuard);
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/auth/pin");
         });
         testWidgets(
@@ -1379,6 +1433,7 @@ void main() {
           deactivateGuard(guard: pinGuard);
           await tester.pumpAndSettle();
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/licenses");
         });
       });
@@ -1396,6 +1451,7 @@ void main() {
 
           deactivateGuard(guard: onboardGuard);
 
+          await tester.pumpAndSettle();
           expect(router.location.sanitized, "/onboard/passphrase");
         });
       });
@@ -1436,7 +1492,7 @@ void main() {
                 "super-guarded-content",
                 followUp: [Guard2],
               ),
-            ])
+            ]),
           ]),
         ];
 
@@ -1454,6 +1510,7 @@ void main() {
 
               router.goNamed("shield");
 
+              await tester.pumpAndSettle();
               expect(router.location.sanitized, "/shield");
             });
 
@@ -1470,6 +1527,7 @@ void main() {
               deactivateGuard(guard: guard1);
               router.goNamed("shield");
 
+              await tester.pumpAndSettle();
               expect(router.location.sanitized, "/shield");
             });
 
@@ -1486,6 +1544,7 @@ void main() {
               deactivateGuard(guard: guard2);
               router.goNamed("shield");
 
+              await tester.pumpAndSettle();
               expect(router.location.sanitized, "/shield");
             });
 
@@ -1503,6 +1562,7 @@ void main() {
               deactivateGuard(guard: guard2);
               router.goNamed("shield");
 
+              await tester.pumpAndSettle();
               expect(router.location.sanitized, "/guarded-content");
             });
           });
@@ -1522,6 +1582,7 @@ void main() {
 
         router.goNamed("pin");
 
+        await tester.pumpAndSettle();
         expect(router.location.sanitized, "/auth/login");
       });
 
@@ -1533,12 +1594,15 @@ void main() {
           guards: [authGuard, pinGuard, onboardGuard],
           routes: routeTree,
         );
+        await tester.pumpAndSettle();
         expect(router.location.sanitized, "/auth/login?continue=/app/dash");
         router.goNamed("hello");
+        await tester.pumpAndSettle();
         expect(router.location.sanitized, "/auth/hello");
 
         deactivateGuard(guard: authGuard);
 
+        await tester.pumpAndSettle();
         expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
       });
 
@@ -1550,12 +1614,15 @@ void main() {
           guards: [authGuard, pinGuard, onboardGuard],
           routes: routeTree,
         );
+        await tester.pumpAndSettle();
         expect(router.location.sanitized, "/auth/login?continue=/app/dash");
         router.go("/auth/hello/sub1");
+        await tester.pumpAndSettle();
         expect(router.location.sanitized, "/auth/hello/sub1");
 
         deactivateGuard(guard: authGuard);
 
+        await tester.pumpAndSettle();
         expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
       });
 
