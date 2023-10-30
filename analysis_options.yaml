@@ -3,7 +3,6 @@ include: package:lint/analysis_options.yaml
 analyzer:
   exclude:
     - /**/generated/**
-    - /**/*.freezed.dart
     - /**/*.gr.dart
     - /**/*.g.dart
 
@@ -16,9 +15,6 @@ analyzer:
     unused_import: warning
     unnecessary_import: warning
     invalid_annotation_target: ignore
-    # https://stackoverflow.com/questions/72423594/how-to-apply-the-same-analysis-options-yaml-to-a-set-of-sibling-flutter-projec
-    # this is ignored because we decided not to have to root folder as an actual "dart project" with dependencies and all that.
-    include_file_not_found: ignore
     no_leading_underscores_for_local_identifiers: ignore
 
 linter:
