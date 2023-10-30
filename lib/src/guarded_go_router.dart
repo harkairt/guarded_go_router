@@ -87,14 +87,14 @@ class GuardedGoRouter {
         state: state,
         fn: (context, state) {
           if (debugLog) {
-            timedDebugPrint("👉🏻👉🏻👉🏻 ${state.location}");
+            timedDebugPrint("👉🏻👉🏻👉🏻 ${state.uri}");
           }
           return null;
         },
         relay: (context, state) {
           if (debugLog) {
             timedDebugPrint(
-              "👉🏻👉🏻👉🏻 🟠 ${state.location} (possible in redirect cycle, removing continue query param)",
+              "👉🏻👉🏻👉🏻 🟠 ${state.uri} (possible in redirect cycle, removing continue query param)",
             );
           }
           return state.removeContinuePath();
@@ -115,9 +115,9 @@ class GuardedGoRouter {
   String? _loggingGuardingRedirect(BuildContext context, GoRouterState state) {
     final redirectResult = _guardingRedirect(context, state);
     if (redirectResult == null) {
-      timedDebugPrint("✋🏾 ${state.location}");
+      timedDebugPrint("✋🏾 ${state.uri}");
     } else {
-      timedDebugPrint("  ${state.location} (${state.requireName}) 👉 $redirectResult");
+      timedDebugPrint("  ${state.uri} (${state.requireName}) 👉 $redirectResult");
     }
     return redirectResult;
   }
@@ -147,7 +147,7 @@ class GuardedGoRouter {
 
       final queryReplacedFullPath = _replaceParamsInPath(state.fullPath, state.pathParameters);
       if (queryReplacedFullPath == goRouter.namedLocation(state.requireName, pathParameters: state.pathParameters)) {
-        return goRouter.namedLocationFrom(state, firstFollowUpRouteName, continuePath: state.location);
+        return goRouter.namedLocationFrom(state, firstFollowUpRouteName, continuePath: state.uri.toString());
       }
     }
 
@@ -170,7 +170,7 @@ class GuardedGoRouter {
         if (currentGuards.isEmpty && firstBlockingParent.savesLocation && storeAsContinue && !_isNeglectingContinue) {
           return goRouter.namedLocationCaptureContinue(blockingParentShieldName, state);
         } else {
-          return goRouter.namedLocation(blockingParentShieldName, queryParameters: state.queryParameters);
+          return goRouter.namedLocation(blockingParentShieldName, queryParameters: state.uri.queryParameters);
         }
       }
     }

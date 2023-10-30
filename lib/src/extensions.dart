@@ -217,7 +217,7 @@ extension StringX on String? {
 
 extension GoRouterX on GoRouter {
   String? namedLocationFrom(GoRouterState state, String name, {String? continuePath}) {
-    return namedLocation(name, pathParameters: state.pathParameters, queryParameters: state.queryParametersAll);
+    return namedLocation(name, pathParameters: state.pathParameters, queryParameters: state.uri.queryParametersAll);
   }
 
   bool isAtLocation(GoRouterState state, GuardAwareGoRoute item) {
@@ -228,17 +228,17 @@ extension GoRouterX on GoRouter {
       final _location = namedLocation(
         item.name!,
         pathParameters: state.pathParameters,
-        queryParameters: state.queryParametersAll,
+        queryParameters: state.uri.queryParametersAll,
       );
 
-      return _location == state.location;
+      return _location == state.uri.toString();
     }
 
     return false;
   }
 
   String? namedLocationCaptureContinue(String name, GoRouterState state) {
-    return namedLocation(name, queryParameters: <String, dynamic>{"continue": state.location});
+    return namedLocation(name, queryParameters: <String, dynamic>{"continue": state.uri.toString()});
   }
 
   void popOrGoNamed(String name, {Map<String, String> pathParameters = const {}}) {
@@ -284,14 +284,14 @@ List<RouteBase> findTreePathTillNodeWhere({
 extension GoRouterStateX on GoRouterState {
   String? removeContinuePath() {
     final newUri = Uri(
-      path: Uri.parse(location).path,
-      queryParameters: <String, dynamic>{...queryParameters}..remove("continue"),
+      path: Uri.parse(uri.toString()).path,
+      queryParameters: <String, dynamic>{...uri.queryParameters}..remove("continue"),
     );
     return newUri.path;
   }
 
   String? maybeResolveContinuePath() {
-    final continuePath = queryParameters["continue"];
+    final continuePath = uri.queryParameters["continue"];
     if (continuePath?.isNotEmpty ?? false) {
       return continuePath;
     }
@@ -299,12 +299,12 @@ extension GoRouterStateX on GoRouterState {
   }
 
   bool get locationEqualsContinuePath {
-    final continuePath = queryParameters["continue"];
+    final continuePath = uri.queryParameters["continue"];
     if (continuePath == null || continuePath.isEmpty) {
       return false;
     }
 
-    final currentUri = Uri.parse(location);
+    final currentUri = Uri.parse(uri.toString());
     final continueUri = Uri.parse(continuePath);
 
     if (currentUri.path == continueUri.path) {
