@@ -64,6 +64,46 @@ extension ShellRouteX on ShellRoute {
       );
 }
 
+extension StatefulShellBranchX on StatefulShellBranch {
+  StatefulShellBranch copyWith({
+    List<RouteBase>? routes,
+    String? initialLocation,
+    GlobalKey<NavigatorState>? navigatorKey,
+    List<NavigatorObserver>? observers,
+    String? restorationScopeId,
+  }) =>
+      StatefulShellBranch(
+        routes: routes ?? this.routes,
+        initialLocation: initialLocation ?? this.initialLocation,
+        navigatorKey: navigatorKey ?? this.navigatorKey,
+        observers: observers ?? this.observers,
+        restorationScopeId: restorationScopeId ?? this.restorationScopeId,
+      );
+}
+
+extension StatefulShellRouteX on StatefulShellRoute {
+  StatefulShellRoute traverseMap(RouteBase Function(RouteBase item) map) {
+    return copyWith(branches: branches.traverseMap(map));
+  }
+
+  StatefulShellRoute copyWith({
+    Widget Function(BuildContext, GoRouterState, Widget)? builder,
+    Page<dynamic> Function(BuildContext, GoRouterState, Widget)? pageBuilder,
+    GlobalKey<NavigatorState>? parentNavigatorKey,
+    Widget Function(BuildContext, StatefulNavigationShell, List<Widget>)? navigatorContainerBuilder,
+    List<StatefulShellBranch>? branches,
+    String? restorationScopeId,
+  }) =>
+      StatefulShellRoute(
+        parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
+        builder: builder ?? this.builder,
+        pageBuilder: pageBuilder ?? this.pageBuilder,
+        navigatorContainerBuilder: navigatorContainerBuilder ?? this.navigatorContainerBuilder,
+        branches: branches ?? this.branches,
+        restorationScopeId: restorationScopeId ?? this.restorationScopeId,
+      );
+}
+
 extension RouteBaseX on RouteBase {
   RouteBase copyWithRoutes(List<RouteBase>? routes) {
     if (this is GuardAwareGoRoute) {
@@ -77,6 +117,9 @@ extension RouteBaseX on RouteBase {
     }
     if (this is ShellRoute) {
       return (this as ShellRoute).copyWith(routes: routes);
+    }
+    if (this is StatefulShellRoute) {
+      throw "Do not use `copyWithRoutes` with StatefulShellRoute, but ensure that all branches are updated.";
     }
     if (this is GoRoute) {
       return (this as GoRoute).copyWith(routes: routes);
@@ -165,8 +208,12 @@ extension RouteBaseListX on List<RouteBase> {
   List<RouteBase> traverseMap(RouteBase Function(RouteBase item) map) {
     final result = <RouteBase>[];
     for (final route in this) {
-      final mappedRoute = map(route.copyWithRoutes(route.routes.traverseMap(map)));
-      result.add(mappedRoute);
+      if (route is StatefulShellRoute) {
+        result.add(route.traverseMap(map));
+      } else {
+        final mappedRoute = map(route.copyWithRoutes(route.routes.traverseMap(map)));
+        result.add(mappedRoute);
+      }
     }
     return result;
   }
@@ -178,6 +225,18 @@ extension RouteBaseListX on List<RouteBase> {
         result.addAll(route.routes.removeGuardShells(parent));
       } else if (route is DiscardShell) {
         result.addAll(route.routes.removeGuardShells(parent));
+      } else if (route is StatefulShellRoute) {
+        result.add(
+          route.copyWith(
+            branches: route.branches
+                .map(
+                  (e) => e.copyWith(
+                    routes: e.routes.removeGuardShells(null),
+                  ),
+                )
+                .toList(),
+          ),
+        );
       } else {
         result.add(route.copyWithRoutes(route.routes.removeGuardShells(route)));
       }
@@ -190,10 +249,33 @@ extension RouteBaseListX on List<RouteBase> {
     for (final route in this) {
       if (route is GoRoute || route is GuardAwareGoRoute) {
         result.add(map(route));
+      } else if (route is StatefulShellRoute) {
+        final mappedBranches = <StatefulShellBranch>[];
+
+        for (final branch in route.branches) {
+          mappedBranches.add(branch.copyWith(routes: branch.routes.mapTopLevelRoutes(map)));
+        }
+
+        result.add(route.copyWith(branches: mappedBranches));
       } else {
         result.add(route.copyWithRoutes(route.routes.mapTopLevelRoutes(map)));
       }
     }
+
+    return result;
+  }
+}
+
+extension StatefulShellBranchListXX on StatefulShellRoute {}
+
+extension StatefulShellBranchListX on List<StatefulShellBranch> {
+  List<StatefulShellBranch> traverseMap(RouteBase Function(RouteBase item) map) {
+    final result = <StatefulShellBranch>[];
+
+    for (final route in this) {
+      result.add(route.copyWith(routes: route.routes.traverseMap(map)));
+    }
+
     return result;
   }
 }
