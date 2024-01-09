@@ -15,9 +15,9 @@ class GoNotifier extends ChangeNotifier {
     for (final provider in dependencies) {
       _ref.listen<dynamic>(
         provider,
-        (dynamic _, dynamic __) {
+        (dynamic prev, dynamic next) {
           if (debugLog) {
-            timedDebugPrint('⚪️ [$_ => $__] - ${provider.runtimeType}');
+            timedDebugPrint('⚪️ [$prev => $next] - ${provider.runtimeType}');
           }
           notifyListeners();
         },
