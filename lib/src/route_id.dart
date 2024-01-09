@@ -36,7 +36,3 @@ class RouteId {
         ignoreAsContinueLocation: ignoreAsContinueLocation,
       );
 }
-
-class RouteParams {
-  static const guid = 'guid';
-}
