@@ -1,14 +1,17 @@
 name: guarded_go_router
 description: guarded_go_router
-version: 0.0.2
+repository: https://github.com/harkairt/guarded_go_router
+version: 0.0.1
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
   flutter: ">=3.13.0"
 
 dependencies:
+  collection: ^1.17.2
   flutter:
     sdk: flutter
+  flutter_hooks: ^0.20.4
   go_router: ^13.0.1
   hooks_riverpod: ^2.1.3
   uni_links: ^0.5.1
