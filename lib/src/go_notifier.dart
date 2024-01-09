@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:guarded_go_router/src/utils.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class GoNotifier extends ChangeNotifier {
   final Ref _ref;
