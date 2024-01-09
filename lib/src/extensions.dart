@@ -298,6 +298,10 @@ extension StringX on String? {
 }
 
 extension GoRouterX on GoRouter {
+  String get location {
+    return routeInformationProvider.value.uri.toString();
+  }
+
   String? namedLocationFrom(GoRouterState state, String name, {String? continuePath}) {
     return namedLocation(name, pathParameters: state.pathParameters, queryParameters: state.uri.queryParametersAll);
   }

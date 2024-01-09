@@ -26,12 +26,6 @@ class Guard4 extends Mock implements GoGuard {}
 
 Widget simpleBuilder(BuildContext context, GoRouterState state) => Container();
 
-extension GoRouterX on GoRouter {
-  String get location {
-    return routeInformationProvider.value.uri.toString();
-  }
-}
-
 void main() {
   late final ChangeNotifier refreshListenable;
 
