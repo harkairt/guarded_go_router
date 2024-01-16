@@ -155,8 +155,11 @@ class GuardedGoRouter {
     final parentGuards =
         guardShells.where((guardContext) => _getShieldRouteName(guardContext.guard) != routeName).toList();
     if (parentGuards.isNotEmpty) {
-      final firstBlockingParent =
-          await guardShells.asyncFirstWhereOrNull((guardContext) => guardContext.guard._logBlocks(debugLog: debugLog));
+      final firstBlockingParent = await guardShells.asyncFirstWhereOrNull((guardContext) async {
+        final az = await guardContext.guard._logBlocks(debugLog: debugLog);
+        debugPrint('____ CICAFÜLE $az');
+        return az;
+      });
       if (firstBlockingParent != null) {
         final blockingParentShieldName = _getShieldRouteName(firstBlockingParent.guard);
 

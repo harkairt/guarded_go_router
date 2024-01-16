@@ -10,6 +10,8 @@ import 'package:guarded_go_router/src/exceptions/multiple_shield_route_exception
 import 'package:guarded_go_router/src/exceptions/shield_route_missing_exception.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'observer_tester.dart';
+
 class AuthGuard extends Mock implements GoGuard {}
 
 class PinGuard extends Mock implements GoGuard {}
@@ -36,6 +38,7 @@ void main() {
   Future<GuardedGoRouter> pumpGuardedRouter(
     WidgetTester tester, {
     String initialLocation = "/",
+    NavigatorObserver? navigatorObserver,
     required List<RouteBase> routes,
     required List<GoGuard> guards,
   }) async {
@@ -49,6 +52,7 @@ void main() {
           debugLogDiagnostics: true,
           redirectLimit: 20,
           routes: routes,
+          observers: navigatorObserver == null ? [] : [navigatorObserver],
           initialLocation: initialLocation,
           refreshListenable: refreshListenable,
         );
@@ -68,6 +72,50 @@ void main() {
     return guardedRouter;
   }
 
+  Future<(GuardedGoRouter, Future<void> Function())> pumpGuardedRouter2(
+    WidgetTester tester, {
+    NavigatorObserver? navigatorObserver,
+    String initialLocation = "/",
+    required List<RouteBase> routes,
+    required List<GoGuard> guards,
+  }) async {
+    final guardedRouter = GuardedGoRouter(
+      guards: guards,
+      routes: routes,
+      debugLog: true,
+      buildRouter: (routes, rootRedirect) {
+        return GoRouter(
+          redirect: rootRedirect,
+          observers: navigatorObserver == null ? [] : [navigatorObserver],
+          debugLogDiagnostics: true,
+          redirectLimit: 20,
+          routes: routes,
+          initialLocation: initialLocation,
+          refreshListenable: refreshListenable,
+        );
+      },
+    );
+
+    final router = guardedRouter.goRouter;
+
+    final app = MaterialApp.router(
+      routerDelegate: router.routerDelegate,
+      routeInformationParser: router.routeInformationParser,
+      routeInformationProvider: router.routeInformationProvider,
+    );
+    await tester.pumpWidget(app);
+    await tester.pumpAndSettle();
+
+    return (
+      guardedRouter,
+      () async {
+        await tester.pumpFrames(app, const Duration(minutes: 10));
+        await tester.idle();
+        await tester.pumpAndSettle(const Duration(minutes: 10));
+      }
+    );
+  }
+
   Future<GoRouter> pumpRouter(
     WidgetTester tester, {
     String initialLocation = "/",
@@ -76,6 +124,23 @@ void main() {
   }) async {
     final router = await pumpGuardedRouter(tester, initialLocation: initialLocation, routes: routes, guards: guards);
     return router.goRouter;
+  }
+
+  Future<(GoRouter, Future<void> Function())> pumpRouter2(
+    WidgetTester tester, {
+    String initialLocation = "/",
+    NavigatorObserver? navigatorObserver,
+    required List<RouteBase> routes,
+    required List<GoGuard> guards,
+  }) async {
+    final router = await pumpGuardedRouter2(
+      tester,
+      initialLocation: initialLocation,
+      routes: routes,
+      guards: guards,
+      navigatorObserver: navigatorObserver,
+    );
+    return (router.$1.goRouter, router.$2);
   }
 
   void activateGuard({required GoGuard guard}) {
@@ -829,8 +894,23 @@ void main() {
         });
 
         testWidgets('then resolve continue path if exists', (WidgetTester tester) async {
-          final router = await pumpRouter(
+          final to = TestObserver()
+            ..onPushed = (route, previousRoute) {
+              debugPrint("onPushed: $route, previous: $previousRoute");
+            }
+            ..onPopped = (route, previousRoute) {
+              debugPrint("onPopped: $route, previous: $previousRoute");
+            }
+            ..onRemoved = (route, previousRoute) {
+              debugPrint("onRemoved: $route, previous: $previousRoute");
+            }
+            ..onReplaced = (route, previousRoute) {
+              debugPrint("onReplaced: $route, previous: $previousRoute");
+            };
+
+          final router = await pumpRouter2(
             tester,
+            navigatorObserver: to,
             guards: [guard1, guard2, guard3],
             routes: [
               _goRoute("shield1", shieldOf: [Guard1]),
@@ -862,10 +942,37 @@ void main() {
             ],
           );
 
-          router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
+          router.$1.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
+          // for (int i = 0; i < 500; i++) {
+          //   // because pumpAndSettle doesn't work with riverpod
+          //   final az = await tester.pumpAndSettle(const Duration(days: 1));
+          //   debugPrint('_____ pumped $az frames');
+          // }
 
-          await tester.pumpAndSettle();
-          expect(router.location.sanitized, "/route");
+          // await tester.idle();
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          await tester.pumpAndSettle(const Duration(days: 1));
+          // await tester.pumpAndSettle(const Duration(days: 1));
+          // await router.$2();
+          // expectLater(actual, matcher)
+
+          debugPrint('_____MÁR EXPECTÁLOK');
+          expect(router.$1.location.sanitized, "/route");
         });
       });
     });

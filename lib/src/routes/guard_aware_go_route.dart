@@ -21,6 +21,7 @@ class GuardAwareGoRoute extends GoRoute {
     super.parentNavigatorKey,
     super.redirect,
     super.routes,
+    super.onExit,
   });
 
   GuardAwareGoRoute copyWith({
@@ -42,6 +43,7 @@ class GuardAwareGoRoute extends GoRoute {
         pageBuilder: pageBuilder ?? this.pageBuilder,
         parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
         routes: routes ?? this.routes,
+        onExit: onExit,
         ignoreAsContinueLocation: ignoreAsContinueLocation,
       );
 
@@ -50,7 +52,7 @@ class GuardAwareGoRoute extends GoRoute {
   ) {
     final existingRedirect = this.redirect;
     if (existingRedirect == null) {
-      return copyWith(redirect: (context, state) => redirect(context, state));
+      return copyWith(redirect: (context, state) async => await redirect(context, state));
     } else {
       return copyWith(
         redirect: (context, state) async {
@@ -81,6 +83,7 @@ GuardAwareGoRoute goRoute(
   Page<dynamic> Function(BuildContext, GoRouterState)? pageBuilder,
   GlobalKey<NavigatorState>? parentNavigatorKey,
   FutureOr<String?> Function(BuildContext, GoRouterState)? redirect,
+  ExitCallback? onExit,
   bool ignoreAsContinueLocation = false,
 }) {
   return GuardAwareGoRoute(
@@ -94,6 +97,7 @@ GuardAwareGoRoute goRoute(
     pageBuilder: pageBuilder,
     parentNavigatorKey: parentNavigatorKey,
     redirect: redirect,
+    onExit: onExit,
     ignoreAsContinueLocation: ignoreAsContinueLocation,
   );
 }
