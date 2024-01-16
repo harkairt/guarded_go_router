@@ -43,7 +43,7 @@ class GuardedGoRouter {
 
   bool _isNeglectingContinue = false;
 
-  /// Invoke to ignore storing current path as `continue` query parameter. 
+  /// Invoke to ignore storing current path as `continue` query parameter.
   /// Implicit navigations triggered by the wrapped method will not store the current location.
   FutureOr<T> neglectContinue<T>(FutureOr<T> Function() fn) async {
     _isNeglectingContinue = true;
@@ -112,8 +112,8 @@ class GuardedGoRouter {
     };
   }
 
-  String? _loggingGuardingRedirect(BuildContext context, GoRouterState state) {
-    final redirectResult = _guardingRedirect(context, state);
+  Future<String?> _loggingGuardingRedirect(BuildContext context, GoRouterState state) async {
+    final redirectResult = await _guardingRedirect(context, state);
     if (redirectResult == null) {
       timedDebugPrint("✋🏾 ${state.uri}");
     } else {
@@ -135,11 +135,11 @@ class GuardedGoRouter {
     }
   }
 
-  String? _guardingRedirect(BuildContext context, GoRouterState state) {
+  Future<String?> _guardingRedirect(BuildContext context, GoRouterState state) async {
     final routeName = state.requireName;
 
     final masterGuards = _getGuardsWhichControlState(state);
-    if (masterGuards.isNotEmpty && masterGuards.every((guard) => guard._logPasses(debugLog: debugLog))) {
+    if (masterGuards.isNotEmpty && await masterGuards.asyncEvery((guard) => guard._logPasses(debugLog: debugLog))) {
       final firstFollowUpRouteName = _follwingRouteNames[masterGuards.first];
       if (firstFollowUpRouteName == null) {
         throw FollowUpRouteMissingException(masterGuards.first.runtimeType);
@@ -156,7 +156,7 @@ class GuardedGoRouter {
         guardShells.where((guardContext) => _getShieldRouteName(guardContext.guard) != routeName).toList();
     if (parentGuards.isNotEmpty) {
       final firstBlockingParent =
-          guardShells.firstWhereOrNull((guardContext) => guardContext.guard._logBlocks(debugLog: debugLog));
+          await guardShells.asyncFirstWhereOrNull((guardContext) => guardContext.guard._logBlocks(debugLog: debugLog));
       if (firstBlockingParent != null) {
         final blockingParentShieldName = _getShieldRouteName(firstBlockingParent.guard);
 
@@ -177,7 +177,7 @@ class GuardedGoRouter {
 
     final currentGuards = _getGuardsOfCurrentShield(state);
     if (currentGuards.isNotEmpty) {
-      if (currentGuards.any((guard) => guard._logBlocks(debugLog: debugLog))) {
+      if (await currentGuards.asyncAny((guard) => guard._logBlocks(debugLog: debugLog))) {
         return null;
       }
 
@@ -365,12 +365,12 @@ class GuardedGoRouter {
 }
 
 extension GoGuardX on GoGuard {
-  bool _logPasses({bool debugLog = false}) {
+  Future<bool> _logPasses({bool debugLog = false}) async {
     if (!debugLog) {
       return passes();
     }
 
-    if (passes()) {
+    if (await passes()) {
       timedDebugPrint('🟢 $runtimeType');
       return true;
     } else {
@@ -379,12 +379,12 @@ extension GoGuardX on GoGuard {
     }
   }
 
-  bool _logBlocks({bool debugLog = false}) {
+  Future<bool> _logBlocks({bool debugLog = false}) async {
     if (!debugLog) {
       return blocks();
     }
 
-    if (blocks()) {
+    if (await blocks()) {
       timedDebugPrint('🔴 $runtimeType');
       return true;
     } else {

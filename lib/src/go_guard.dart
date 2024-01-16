@@ -7,6 +7,6 @@ abstract class GoGuard {
 
   const GoGuard(this.read);
 
-  bool passes();
-  bool blocks() => !passes();
+  Future<bool> passes();
+  Future<bool> blocks() async => !(await passes());
 }

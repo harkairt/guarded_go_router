@@ -266,7 +266,54 @@ extension RouteBaseListX on List<RouteBase> {
   }
 }
 
-extension StatefulShellBranchListXX on StatefulShellRoute {}
+// extension ListX<T> on List<T> {
+//   Future<T?> asyncFirstWhereOrNull(Future<bool> Function(T element) test) async {
+//     final iterator = this.iterator;
+//     return Future.doWhile(() {
+//       if (!iterator.moveNext()) return false;
+//       final result = test(iterator.current);
+//       return result.then((res) => res);
+//     });
+//   }
+// }
+
+extension AsyncListExtension<T> on List<T> {
+  Future<T?> asyncFirstWhereOrNull(Future<bool> Function(T it) test) async {
+    try {
+      return await Stream.fromIterable(this)
+          .asyncMap<T?>((it) async => await test(it) ? it : null)
+          .firstWhere((itOrNull) => itOrNull != null, orElse: () => null);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> asyncAny(Future<bool> Function(T element) test) async {
+    bool anyMatch = false;
+    
+    await for (final element in Stream.fromIterable(this)) {
+      if (await test(element)) {
+        anyMatch = true;
+        break;
+      }
+    }
+
+    return anyMatch;
+  }
+
+  Future<bool> asyncEvery(Future<bool> Function(T element) test) async {
+    bool allMatch = true;
+
+    await for (final element in Stream.fromIterable(this)) {
+      if (!await test(element)) {
+        allMatch = false;
+        break;
+      }
+    }
+
+    return allMatch;
+  }
+}
 
 extension StatefulShellBranchListX on List<StatefulShellBranch> {
   List<StatefulShellBranch> traverseMap(RouteBase Function(RouteBase item) map) {
