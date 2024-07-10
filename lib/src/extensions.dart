@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:guarded_go_router/guarded_go_router.dart';
 
@@ -14,6 +13,7 @@ extension GoRouteX on GoRoute {
     GlobalKey<NavigatorState>? parentNavigatorKey,
     FutureOr<String?> Function(BuildContext, GoRouterState)? redirect,
     List<RouteBase>? routes,
+    FutureOr<bool> Function(BuildContext, GoRouterState)? onExit,
   }) =>
       GoRoute(
         name: name,
@@ -23,6 +23,7 @@ extension GoRouteX on GoRoute {
         pageBuilder: pageBuilder ?? this.pageBuilder,
         parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
         routes: routes ?? this.routes,
+        onExit: onExit ?? this.onExit,
       );
 
   GoRoute appendRedirect(
@@ -57,12 +58,20 @@ extension ShellRouteX on ShellRoute {
     Page<dynamic> Function(BuildContext, GoRouterState, Widget)? pageBuilder,
     GlobalKey<NavigatorState>? navigatorKey,
     List<RouteBase>? routes,
+    List<NavigatorObserver>? observers,
+    GlobalKey<NavigatorState>? parentNavigatorKey,
+    String? restorationScopeId,
+    GoRouterRedirect? redirect,
   }) =>
       ShellRoute(
         builder: builder ?? this.builder,
         pageBuilder: pageBuilder ?? this.pageBuilder,
         routes: routes ?? this.routes,
         navigatorKey: navigatorKey ?? this.navigatorKey,
+        observers: observers ?? this.observers,
+        parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
+        restorationScopeId: restorationScopeId ?? this.restorationScopeId,
+        redirect: redirect ?? this.redirect,
       );
 }
 
