@@ -730,7 +730,7 @@ void main() {
             expect(router.location.sanitized, "/shield2?continue=/route");
           });
           testWidgets(
-              "without appending continue param (only taking over existing) if the route redirected from is also a shield of a guard",
+              "with appending continue param even if the route redirected from is also a shield of a guard",
               (
             WidgetTester tester,
           ) async {
@@ -773,7 +773,7 @@ void main() {
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
             await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2?continue=/route");
+            expect(router.location.sanitized, "/shield2?continue=/root/1/2/3?continue=/route");
           });
         });
       });

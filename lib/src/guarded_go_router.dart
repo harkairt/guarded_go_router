@@ -43,7 +43,7 @@ class GuardedGoRouter {
 
   bool _isNeglectingContinue = false;
 
-  /// Invoke to ignore storing current path as `continue` query parameter. 
+  /// Invoke to ignore storing current path as `continue` query parameter.
   /// Implicit navigations triggered by the wrapped method will not store the current location.
   FutureOr<T> neglectContinue<T>(FutureOr<T> Function() fn) async {
     _isNeglectingContinue = true;
@@ -160,12 +160,12 @@ class GuardedGoRouter {
       if (firstBlockingParent != null) {
         final blockingParentShieldName = _getShieldRouteName(firstBlockingParent.guard);
 
-        final currentGuards = _getGuardsOfCurrentShield(state);
-
         final routeOfLocation = _routes.traverseFirstWhereOrNull(
           (item) => item is GuardAwareGoRoute && goRouter.isAtLocation(state, item),
         ) as GuardAwareGoRoute?;
         final storeAsContinue = !(routeOfLocation?.ignoreAsContinueLocation ?? false);
+
+        final currentGuards = _guards.where((guard) => routeOfLocation?.shieldOf.contains(guard.runtimeType) ?? false);
 
         if (currentGuards.isEmpty && firstBlockingParent.savesLocation && storeAsContinue && !_isNeglectingContinue) {
           return goRouter.namedLocationCaptureContinue(blockingParentShieldName, state);
