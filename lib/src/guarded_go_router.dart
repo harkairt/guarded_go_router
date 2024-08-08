@@ -137,6 +137,9 @@ class GuardedGoRouter {
 
   String? _guardingRedirect(BuildContext context, GoRouterState state) {
     final routeName = state.requireName;
+    final routeOfLocation = _routes.traverseFirstWhereOrNull(
+      (item) => item is GuardAwareGoRoute && goRouter.isAtLocation(state, item),
+    ) as GuardAwareGoRoute?;
 
     final masterGuards = _getGuardsWhichControlState(state);
     if (masterGuards.isNotEmpty && masterGuards.every((guard) => guard._logPasses(debugLog: debugLog))) {
@@ -151,7 +154,8 @@ class GuardedGoRouter {
       }
     }
 
-    final guardShells = _getGuardShells(routeName: routeName);
+    final guardShells = _getGuardShells(routeName: routeName)
+      ..removeWhere((c) => routeOfLocation?.discardedBy.contains(c.guard.runtimeType) ?? false);
     final parentGuards =
         guardShells.where((guardContext) => _getShieldRouteName(guardContext.guard) != routeName).toList();
     if (parentGuards.isNotEmpty) {
@@ -160,9 +164,6 @@ class GuardedGoRouter {
       if (firstBlockingParent != null) {
         final blockingParentShieldName = _getShieldRouteName(firstBlockingParent.guard);
 
-        final routeOfLocation = _routes.traverseFirstWhereOrNull(
-          (item) => item is GuardAwareGoRoute && goRouter.isAtLocation(state, item),
-        ) as GuardAwareGoRoute?;
         final storeAsContinue = !(routeOfLocation?.ignoreAsContinueLocation ?? false);
 
         final currentGuards = _guards.where((guard) => routeOfLocation?.shieldOf.contains(guard.runtimeType) ?? false);
