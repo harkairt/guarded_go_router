@@ -136,29 +136,29 @@ class GuardedGoRouter {
   }
 
   String? _guardingRedirect(BuildContext context, GoRouterState state) {
-    final routeName = state.requireName;
     final routeOfLocation = _routes.traverseFirstWhereOrNull(
       (item) => item is GuardAwareGoRoute && goRouter.isAtLocation(state, item),
     ) as GuardAwareGoRoute?;
+    final routeName = routeOfLocation?.name ?? state.name ?? 'missing name';
 
-    final masterGuards = _getGuardsWhichControlState(state);
-    if (masterGuards.isNotEmpty && masterGuards.every((guard) => guard._logPasses(debugLog: debugLog))) {
-      final firstFollowUpRouteName = _follwingRouteNames[masterGuards.first];
+    final discardingGuards = _getGuardsThatAreDiscardingThisRoute(routeName);
+    if (discardingGuards.isNotEmpty && discardingGuards.every((guard) => guard._logPasses(debugLog: debugLog))) {
+      final firstFollowUpRouteName = _follwingRouteNames[discardingGuards.first];
       if (firstFollowUpRouteName == null) {
-        throw FollowUpRouteMissingException(masterGuards.first.runtimeType);
+        throw FollowUpRouteMissingException(discardingGuards.first.runtimeType);
       }
 
       final queryReplacedFullPath = _replaceParamsInPath(state.fullPath, state.pathParameters);
-      if (queryReplacedFullPath == goRouter.namedLocation(state.requireName, pathParameters: state.pathParameters)) {
+      if (queryReplacedFullPath == goRouter.namedLocation(routeName, pathParameters: state.pathParameters)) {
         return goRouter.namedLocationFrom(state, firstFollowUpRouteName, continuePath: state.uri.toString());
       }
     }
 
-    final guardShells = _getGuardShells(routeName: routeName)
+    final guardShells = _getGuardShells(routeName)
       ..removeWhere((c) => routeOfLocation?.discardedBy.contains(c.guard.runtimeType) ?? false);
-    final parentGuards =
+    final guardsShieldedByThisRoute =
         guardShells.where((guardContext) => _getShieldRouteName(guardContext.guard) != routeName).toList();
-    if (parentGuards.isNotEmpty) {
+    if (guardsShieldedByThisRoute.isNotEmpty) {
       final firstBlockingParent =
           guardShells.firstWhereOrNull((guardContext) => guardContext.guard._logBlocks(debugLog: debugLog));
       if (firstBlockingParent != null) {
@@ -224,8 +224,8 @@ class GuardedGoRouter {
     return shieldRouteName;
   }
 
-  List<GoGuard> _getGuardsWhichControlState(GoRouterState state) {
-    final treePath = _routes.getTreePath(routeName: state.requireName) ?? [];
+  List<GoGuard> _getGuardsThatAreDiscardingThisRoute(String name) {
+    final treePath = _routes.getTreePath(routeName: name) ?? [];
     final guardTypes = treePath.map((route) {
       if (route is GuardAwareGoRoute) {
         return route.discardedBy;
@@ -244,21 +244,17 @@ class GuardedGoRouter {
     return _guards.where((guard) => _shieldRouteNames[guard] == state.requireName).toList();
   }
 
-  List<_GuardShell> _getGuardShells({required String routeName}) {
+  List<_GuardShellContext> _getGuardShells(String routeName) {
     final treePath = _routes.getTreePath(routeName: routeName);
     if (treePath == null) return [];
 
-    final guardConfigRoutes = treePath.whereType<GuardShell>();
-    final guardTypes = guardConfigRoutes.map((r) => r.guardType).toList();
+    final guardShellRoutes = treePath.whereType<GuardShell>();
+    final guardTypes = guardShellRoutes.map((r) => r.guardType).toList();
     final guards = _guards.where((g) => guardTypes.contains(g.runtimeType)).toList();
     return guards.map(
       (guard) {
-        final shell = guardConfigRoutes.firstWhere((element) => element.guardType == guard.runtimeType);
-
-        return _GuardShell(
-          guard: guard,
-          savesLocation: shell.savesLocation,
-        );
+        final shell = guardShellRoutes.firstWhere((element) => element.guardType == guard.runtimeType);
+        return _GuardShellContext(guard: guard, savesLocation: shell.savesLocation);
       },
     ).toList();
   }
@@ -395,8 +391,8 @@ extension GoGuardX on GoGuard {
   }
 }
 
-class _GuardShell<T extends GoGuard> {
-  _GuardShell({
+class _GuardShellContext<T extends GoGuard> {
+  _GuardShellContext({
     required this.guard,
     required this.savesLocation,
   });
