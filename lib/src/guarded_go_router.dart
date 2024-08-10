@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:guarded_go_router/guarded_go_router.dart';
 import 'package:guarded_go_router/src/exceptions/follow_up_route_missing_exception.dart';
+import 'package:guarded_go_router/src/exceptions/missing_discarding_route_for_follow_up_exception.dart';
 import 'package:guarded_go_router/src/exceptions/multiple_follow_up_route_exception.dart';
 import 'package:guarded_go_router/src/exceptions/multiple_shield_route_exception.dart';
 import 'package:guarded_go_router/src/exceptions/shield_route_missing_exception.dart';
@@ -17,7 +18,7 @@ Widget noOpBuilder(Widget child) => child;
 class GuardedGoRouter {
   late List<RouteBase> _routes;
   late Map<GoGuard, String> _shieldRouteNames = {};
-  late Map<GoGuard, String?> _follwingRouteNames = {};
+  late Map<GoGuard, String?> _followingRouteNames = {};
   late Map<GoGuard, List<String>> _subordinateRouteNames = {};
 
   final List<GoGuard> _guards;
@@ -75,10 +76,11 @@ class GuardedGoRouter {
     _routes = _routes.copyWithAppendedRedirect(debugLog ? _loggingGuardingRedirect : _guardingRedirect);
 
     _shieldRouteNames = _getShieldRouteNames(_guards, _routes);
-    _follwingRouteNames = _getFollowingRouteNames(_guards, _routes);
+    _followingRouteNames = _getFollowingRouteNames(_guards, _routes);
     _subordinateRouteNames = _getSubordinateRouteNames(_guards, _routes);
 
     _ensureGuardsThatHaveSubordinatePathsAlsoHaveFollowUpRoute();
+    _ensureGuardsThatHaveFollowUpRoutesAlsoHaveSubordinateRoute();
 
     goRouter = buildRouter(
       _routes.removeGuardShells(null).wrapWithShell(pageWrapper),
@@ -87,14 +89,14 @@ class GuardedGoRouter {
         state: state,
         fn: (context, state) {
           if (debugLog) {
-            timedDebugPrint("👉🏻👉🏻👉🏻 ${state.uri}");
+            timedDebugPrint("👉🏻👉🏻👉🏻 ${state.uri.toString().sanitized}");
           }
           return null;
         },
         relay: (context, state) {
           if (debugLog) {
             timedDebugPrint(
-              "👉🏻👉🏻👉🏻 🟠 ${state.uri} (possible in redirect cycle, removing continue query param)",
+              "👉🏻👉🏻👉🏻 🟠 ${state.uri.toString().sanitized} (possible in redirect cycle, removing continue query param)",
             );
           }
           return state.removeContinuePath();
@@ -115,9 +117,9 @@ class GuardedGoRouter {
   String? _loggingGuardingRedirect(BuildContext context, GoRouterState state) {
     final redirectResult = _guardingRedirect(context, state);
     if (redirectResult == null) {
-      timedDebugPrint("✋🏾 ${state.uri}");
+      timedDebugPrint("✋🏾 ${state.uri.toString().sanitized}");
     } else {
-      timedDebugPrint("  ${state.uri} (${state.requireName}) 👉 $redirectResult");
+      timedDebugPrint("  ${state.uri.toString().sanitized} (${state.requireName}) 👉 ${redirectResult.sanitized}");
     }
     return redirectResult;
   }
@@ -128,75 +130,92 @@ class GuardedGoRouter {
       final _subordinateRouteNames = entry.value;
 
       if (_subordinateRouteNames.isNotEmpty) {
-        if (_follwingRouteNames[guard]?.isEmpty ?? true) {
+        if (_followingRouteNames[guard]?.isEmpty ?? true) {
           throw FollowUpRouteMissingException(guard.runtimeType);
         }
       }
     }
   }
 
+  void _ensureGuardsThatHaveFollowUpRoutesAlsoHaveSubordinateRoute() {
+    for (final entry in _followingRouteNames.entries) {
+      final guard = entry.key;
+      final followUpRouteName = entry.value;
+
+      if (followUpRouteName != null) {
+        final az = _routes.traverseWhere((route) {
+          if (route is GuardAwareGoRoute) {
+            return route.discardedBy.contains(guard.runtimeType);
+          }
+          if (route is DiscardShell) {
+            return route.guardType == guard.runtimeType;
+          }
+
+          return false;
+        });
+        if (az.isEmpty) {
+          throw MissingDiscardingRouteForFollowUpException(guard.runtimeType);
+        }
+      }
+    }
+  }
+
   String? _guardingRedirect(BuildContext context, GoRouterState state) {
-    final routeOfLocation = _routes.traverseFirstWhereOrNull(
+    final thisRoute = _routes.traverseFirstWhereOrNull(
       (item) => item is GuardAwareGoRoute && goRouter.isAtLocation(state, item),
     ) as GuardAwareGoRoute?;
-    final routeName = routeOfLocation?.name ?? state.name ?? 'missing name';
+    if (thisRoute == null) {
+      return null;
+    }
 
-    final discardingGuards = _getGuardsThatAreDiscardingThisRoute(routeName);
-    if (discardingGuards.isNotEmpty && discardingGuards.every((guard) => guard._logPasses(debugLog: debugLog))) {
-      final firstFollowUpRouteName = _follwingRouteNames[discardingGuards.first];
+    final thisName = thisRoute.name ?? state.name ?? 'missing name';
+    final discardingGuards = _getGuardsThatAreDiscardingThisRoute(thisName);
+
+    if (discardingGuards.isNotEmpty && discardingGuards.every((g) => g._logPasses(debugLog))) {
+      final firstFollowUpRouteName = _followingRouteNames[discardingGuards.first];
+
       if (firstFollowUpRouteName == null) {
         throw FollowUpRouteMissingException(discardingGuards.first.runtimeType);
       }
 
-      final queryReplacedFullPath = _replaceParamsInPath(state.fullPath, state.pathParameters);
-      if (queryReplacedFullPath == goRouter.namedLocation(routeName, pathParameters: state.pathParameters)) {
-        return goRouter.namedLocationFrom(state, firstFollowUpRouteName, continuePath: state.uri.toString());
-      }
-    }
-
-    final guardShells = _getGuardShells(routeName)
-      ..removeWhere((c) => routeOfLocation?.discardedBy.contains(c.guard.runtimeType) ?? false);
-    final guardsShieldedByThisRoute =
-        guardShells.where((guardContext) => _getShieldRouteName(guardContext.guard) != routeName).toList();
-    if (guardsShieldedByThisRoute.isNotEmpty) {
-      final firstBlockingParent =
-          guardShells.firstWhereOrNull((guardContext) => guardContext.guard._logBlocks(debugLog: debugLog));
-      if (firstBlockingParent != null) {
-        final blockingParentShieldName = _getShieldRouteName(firstBlockingParent.guard);
-
-        final storeAsContinue = !(routeOfLocation?.ignoreAsContinueLocation ?? false);
-
-        final currentGuards = _guards.where((guard) => routeOfLocation?.shieldOf.contains(guard.runtimeType) ?? false);
-
-        if (currentGuards.isEmpty && firstBlockingParent.savesLocation && storeAsContinue && !_isNeglectingContinue) {
-          return goRouter.namedLocationCaptureContinue(blockingParentShieldName, state);
-        } else {
-          return goRouter.namedLocation(blockingParentShieldName, queryParameters: state.uri.queryParameters);
-        }
-      }
-    }
-
-    final currentGuards = _getGuardsOfCurrentShield(state);
-    if (currentGuards.isNotEmpty) {
-      if (currentGuards.any((guard) => guard._logBlocks(debugLog: debugLog))) {
+      if (isParentOf(routeName: thisName, maybeParentRouteName: firstFollowUpRouteName)) {
         return null;
       }
 
-      final firstGuardWichHasFollower = currentGuards.firstWhereOrNull((guard) => _follwingRouteNames[guard] != null);
-      if (firstGuardWichHasFollower != null) {
-        final followingRouteName = _follwingRouteNames[firstGuardWichHasFollower]!;
-
-        final resolvedContinuePath = state.maybeResolveContinuePath();
-        if (resolvedContinuePath == null) {
-          return goRouter.namedLocationFrom(state, followingRouteName);
-        }
-      } else {
-        return state.maybeResolveContinuePath();
-      }
+      return goRouter.namedLocationFrom(state, firstFollowUpRouteName);
     }
 
-    final queryReplacedFullPath = _replaceParamsInPath(state.fullPath, state.pathParameters);
-    final isAtRedirectOfLeaf = queryReplacedFullPath ==
+    final guardsShieldingOnThisRoute = _guards.where((g) => thisRoute.shieldOf.contains(g.runtimeType));
+    final enclosingGuards = _getGuardShells(thisName);
+    final firstBlockingGuard = enclosingGuards.firstWhereOrNull((c) => c.guard._logBlocks(debugLog));
+    if (firstBlockingGuard != null) {
+      final blockingShieldName = _getShieldRouteName(firstBlockingGuard.guard);
+
+      final isThisAShieldRoute = guardsShieldingOnThisRoute.isNotEmpty;
+      final guardSavesLocation = firstBlockingGuard.savesLocation;
+      final routeIgnoreAsContinue = thisRoute.ignoreAsContinueLocation;
+
+      if (isThisAShieldRoute || _isNeglectingContinue || routeIgnoreAsContinue || !guardSavesLocation) {
+        return goRouter.namedLocation(blockingShieldName, queryParameters: state.uri.queryParameters);
+      }
+
+      final resolvedContinuePath = state.maybeResolveContinuePath();
+      if (resolvedContinuePath != null) {
+        return goRouter.namedLocation(blockingShieldName, queryParameters: state.uri.queryParameters);
+      }
+
+      return goRouter.namedLocationCaptureContinue(blockingShieldName, state);
+    }
+
+    if (guardsShieldingOnThisRoute.isNotEmpty) {
+      if (guardsShieldingOnThisRoute.any((guard) => guard._logBlocks(debugLog))) {
+        return null;
+      }
+
+      return state.maybeResolveContinuePath();
+    }
+
+    final isAtRedirectOfLeaf = state.resolvedFullPath ==
         goRouter.namedLocation(
           state.requireName,
           pathParameters: state.pathParameters,
@@ -206,14 +225,6 @@ class GuardedGoRouter {
     }
 
     return null;
-  }
-
-  String _replaceParamsInPath(String? path, Map<String, String> params) {
-    var result = path!;
-    for (final entry in params.entries) {
-      result = result.replaceAll(":${entry.key}", entry.value);
-    }
-    return result;
   }
 
   String _getShieldRouteName(GoGuard guard) {
@@ -240,10 +251,6 @@ class GuardedGoRouter {
     return _guards.where((guard) => guardTypes.contains(guard.runtimeType)).toList();
   }
 
-  List<GoGuard> _getGuardsOfCurrentShield(GoRouterState state) {
-    return _guards.where((guard) => _shieldRouteNames[guard] == state.requireName).toList();
-  }
-
   List<_GuardShellContext> _getGuardShells(String routeName) {
     final treePath = _routes.getTreePath(routeName: routeName);
     if (treePath == null) return [];
@@ -257,6 +264,18 @@ class GuardedGoRouter {
         return _GuardShellContext(guard: guard, savesLocation: shell.savesLocation);
       },
     ).toList();
+  }
+
+  bool isParentOf({required String routeName, required String maybeParentRouteName}) {
+    final treePath = _routes.getTreePath(routeName: routeName);
+    if (treePath == null) return false;
+
+    return treePath.where((route) {
+      if (route is GuardAwareGoRoute) {
+        return route.name == maybeParentRouteName;
+      }
+      return false;
+    }).isNotEmpty;
   }
 
   static Map<GoGuard, String> _getShieldRouteNames(
@@ -362,7 +381,7 @@ class GuardedGoRouter {
 }
 
 extension GoGuardX on GoGuard {
-  bool _logPasses({bool debugLog = false}) {
+  bool _logPasses(bool debugLog) {
     if (!debugLog) {
       return passes();
     }
@@ -376,7 +395,7 @@ extension GoGuardX on GoGuard {
     }
   }
 
-  bool _logBlocks({bool debugLog = false}) {
+  bool _logBlocks(bool debugLog) {
     if (!debugLog) {
       return blocks();
     }

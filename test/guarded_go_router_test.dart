@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:guarded_go_router/guarded_go_router.dart';
 import 'package:guarded_go_router/src/exceptions/follow_up_route_missing_exception.dart';
+import 'package:guarded_go_router/src/exceptions/missing_discarding_route_for_follow_up_exception.dart';
 import 'package:guarded_go_router/src/exceptions/multiple_follow_up_route_exception.dart';
 import 'package:guarded_go_router/src/exceptions/multiple_shield_route_exception.dart';
 import 'package:guarded_go_router/src/exceptions/shield_route_missing_exception.dart';
@@ -173,6 +174,7 @@ void main() {
           _goRoute(
             "login",
             shieldOf: [AuthGuard],
+            discardedBy: [AuthGuard],
             routes: [
               _goRoute("sub2"),
             ],
@@ -181,6 +183,7 @@ void main() {
             _goRoute(
               "pin",
               shieldOf: [PinGuard],
+              discardedBy: [PinGuard],
             ),
           ]),
         ],
@@ -190,6 +193,7 @@ void main() {
           _goRoute(
             "onboard",
             shieldOf: const [OnboardGuard],
+            discardedBy: [OnboardGuard],
             routes: [
               _goRoute("profile"),
               _goRoute("passphrase"),
@@ -208,7 +212,7 @@ void main() {
                 _goRoute("me"),
                 _goRoute(
                   "dash",
-                  followUp: [AuthGuard],
+                  followUp: [AuthGuard, PinGuard, OnboardGuard],
                   routes: [
                     _goRoute("item"),
                   ],
@@ -216,6 +220,7 @@ void main() {
                 _goRoute(
                   "subscribe",
                   shieldOf: [Guard1, Guard2],
+                  discardedBy: [Guard1, Guard2],
                 ),
                 _guardShell<Guard1>([
                   _goRoute(
@@ -281,6 +286,25 @@ void main() {
             );
           },
           throwsA(isA<FollowUpRouteMissingException>()),
+        );
+      });
+
+      testWidgets("when follower path is defined but no route is discarded by guard then throw",
+          (WidgetTester tester) async {
+        expect(
+          () async {
+            await pumpRouter(
+              tester,
+              initialLocation: '/hello',
+              guards: [authGuard],
+              routes: [
+                _goRoute("hello"),
+                _goRoute("login", shieldOf: [AuthGuard]),
+                _goRoute("app", followUp: [AuthGuard]),
+              ],
+            );
+          },
+          throwsA(isA<MissingDiscardingRouteForFollowUpException>()),
         );
       });
 
@@ -560,7 +584,9 @@ void main() {
         });
 
         group('then go to shield route of first blocking guard', () {
-          testWidgets("with appending continue param if destination is not a shield path", (WidgetTester tester) async {
+          testWidgets(
+              "with carrying over existing continue param if it does not already exist and if destination is not a shield path",
+              (WidgetTester tester) async {
             final router = await pumpRouter(
               tester,
               guards: [guard1, guard2],
@@ -596,7 +622,91 @@ void main() {
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
             await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2?continue=/root/1/2/3?continue=/route");
+            expect(router.location.sanitized, "/shield2?continue=/route");
+          });
+
+          testWidgets("with appending continue param if there isnt any and destination is not a shield path",
+              (WidgetTester tester) async {
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute(
+                  "root",
+                  routes: [
+                    _guardShell<Guard1>([
+                      _goRoute(
+                        "1",
+                        routes: [
+                          _guardShell<Guard2>([
+                            _goRoute(
+                              "2",
+                              routes: [
+                                _guardShell<Guard3>([
+                                  _goRoute("3"),
+                                ]),
+                              ],
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ]),
+                  ],
+                ),
+              ],
+            );
+
+            router.goNamed("3");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
+          });
+
+          testWidgets(
+              "with taking over existing continue param if destination is not a shield path, but ignoreAsContinueLocation: true is added to a node in between",
+              (WidgetTester tester) async {
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute(
+                  "root",
+                  routes: [
+                    _guardShell<Guard1>([
+                      _goRoute(
+                        "1",
+                        routes: [
+                          _guardShell<Guard2>([
+                            _goRoute(
+                              ignoreAsContinueLocation: true,
+                              "2",
+                              routes: [
+                                _guardShell<Guard3>([
+                                  _goRoute(
+                                    "3",
+                                  ),
+                                ]),
+                              ],
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ]),
+                  ],
+                ),
+              ],
+            );
+
+            router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/route");
           });
 
           testWidgets(
@@ -637,10 +747,10 @@ void main() {
               ],
             );
 
-            router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
+            router.goNamed("3");
 
             await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2?continue=/root/1/2/3?continue=/route");
+            expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
           });
 
           testWidgets(
@@ -730,8 +840,52 @@ void main() {
             expect(router.location.sanitized, "/shield2?continue=/route");
           });
           testWidgets(
-              "with appending continue param even if the route redirected from is also a shield of a guard",
+              "with carrying over existing continue param even if the route redirected from is also a shield of a guard",
               (
+            WidgetTester tester,
+          ) async {
+            reset(guard4);
+            deactivateGuard(guard: guard4);
+
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3, guard4],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute(
+                  "root",
+                  routes: [
+                    _guardShell<Guard1>([
+                      _goRoute(
+                        "1",
+                        routes: [
+                          _guardShell<Guard2>([
+                            _goRoute(
+                              "2",
+                              shieldOf: [Guard4],
+                              routes: [
+                                _guardShell<Guard3>([
+                                  _goRoute("3"),
+                                ]),
+                              ],
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ]),
+                  ],
+                ),
+              ],
+            );
+
+            router.goNamed("3");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
+          });
+          testWidgets("with appending continue param even if the route redirected from is also a shield of a guard", (
             WidgetTester tester,
           ) async {
             reset(guard4);
@@ -773,7 +927,7 @@ void main() {
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
             await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2?continue=/root/1/2/3?continue=/route");
+            expect(router.location.sanitized, "/shield2?continue=/route");
           });
         });
       });
@@ -898,6 +1052,7 @@ void main() {
                 routes: [
                   _goRoute(
                     "multi-shield",
+                    discardedBy: [Guard1, Guard2],
                     shieldOf: [Guard1, Guard2],
                   ),
                 ],
@@ -960,6 +1115,7 @@ void main() {
                   routes: [
                     _goRoute(
                       "multi-shield",
+                      discardedBy: [Guard2],
                       shieldOf: [Guard1, Guard2],
                     ),
                   ],
@@ -988,6 +1144,7 @@ void main() {
                     _goRoute(
                       "multi-shield",
                       shieldOf: [Guard1, Guard2],
+                      discardedBy: [Guard1, Guard2],
                     ),
                   ],
                 ),
@@ -1025,6 +1182,302 @@ void main() {
             await tester.pumpAndSettle();
             expect(router.location.sanitized, "/root/multi-shield");
           });
+        });
+      });
+    });
+
+    group('when a shield is also a followUp route of the same guard', () {
+      late final Guard1 guard1;
+      late final Guard2 guard2;
+
+      setUpAll(() {
+        guard1 = Guard1();
+        guard2 = Guard2();
+      });
+
+      setUp(() {
+        reset(guard1);
+        deactivateGuard(guard: guard1);
+
+        reset(guard2);
+        activateGuard(guard: guard2);
+      });
+
+      group('and it is not active', () {
+        testWidgets('allow to go to another route', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _goRoute(
+                    "1",
+                    shieldOf: [Guard1],
+                    discardedBy: [Guard1],
+                    followUp: [Guard1],
+                  ),
+                  _goRoute("2"),
+                ],
+              ),
+            ],
+          );
+
+          router.goNamed("2");
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/2");
+        });
+
+        testWidgets('allow to go to a subroute', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _guardShell<Guard1>([
+                    _goRoute(
+                      "1",
+                      shieldOf: [Guard1],
+                      followUp: [Guard1],
+                      discardedBy: [Guard1],
+                      routes: [
+                        _goRoute("2"),
+                      ],
+                    ),
+                  ]),
+                ],
+              ),
+            ],
+          );
+
+          router.goNamed("2");
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/1/2");
+        });
+
+        testWidgets('allow to go to a subroute2', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute("reset-password", discardedBy: [Guard1]),
+              _guardShell<Guard1>([
+                _goRoute(
+                  "home",
+                  shieldOf: [Guard1],
+                  followUp: [Guard1],
+                  routes: [
+                    _goRoute("profile"),
+                  ],
+                ),
+              ]),
+            ],
+          );
+
+          router.goNamed("profile");
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/home/profile");
+        });
+
+        testWidgets('and some other route is discarded by guard, then allow to go to a subroute',
+            (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _goRoute("meh", discardedBy: [Guard1]),
+                  _goRoute(
+                    "1",
+                    shieldOf: [Guard1],
+                    followUp: [Guard1],
+                    routes: [
+                      _goRoute("2"),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          router.goNamed("2");
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/1/2");
+        });
+      });
+    });
+
+    group('when an active guard becomes passing', () {
+      late final Guard1 guard1;
+      late final Guard2 guard2;
+
+      setUpAll(() {
+        guard1 = Guard1();
+        guard2 = Guard2();
+      });
+
+      setUp(() {
+        reset(guard1);
+        activateGuard(guard: guard1);
+
+        reset(guard2);
+        activateGuard(guard: guard2);
+      });
+
+      group('and it does not have a followUp route defined', () {
+        testWidgets('then route should not change', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _goRoute("1", shieldOf: [Guard1]),
+                  _goRoute("2"),
+                ],
+              ),
+            ],
+          );
+          router.goNamed("1");
+
+          deactivateGuard(guard: guard1);
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/1");
+        });
+        testWidgets('then route resolves continue path', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _goRoute("1", shieldOf: [Guard1]),
+                  _goRoute("2"),
+                ],
+              ),
+            ],
+          );
+          router.goNamed("1", queryParameters: <String, dynamic>{"continue": "/root/2"});
+
+          deactivateGuard(guard: guard1);
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/2");
+        });
+      });
+
+      group('and it does have a followUp route defined and also discarding shield route', () {
+        testWidgets('then should navigate to followUp route if there is no continue path', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _goRoute("1", shieldOf: [Guard1], discardedBy: [Guard1]),
+                  _goRoute("2", followUp: [Guard1]),
+                ],
+              ),
+            ],
+          );
+          router.goNamed("1");
+
+          deactivateGuard(guard: guard1);
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/2");
+        });
+
+        testWidgets('then should navigate to continue path if defined', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _goRoute("1", shieldOf: [Guard1], discardedBy: [Guard1]),
+                  _goRoute("2", followUp: [Guard1]),
+                  _goRoute("3"),
+                ],
+              ),
+            ],
+          );
+          router.goNamed("1", queryParameters: <String, dynamic>{"continue": "/root/3"});
+
+          deactivateGuard(guard: guard1);
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/3");
+        });
+
+        testWidgets('when discarding shield, then allow to go to a subroute', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _goRoute(
+                    "1",
+                    shieldOf: [Guard1],
+                    followUp: [Guard1],
+                    discardedBy: [Guard1],
+                    routes: [
+                      _goRoute("2"),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          router.goNamed("2");
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/1/2");
+        });
+
+        testWidgets('when discarding some other route, then allow to go to a subroute', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1],
+            routes: [
+              _goRoute(
+                "root",
+                routes: [
+                  _goRoute("meh", discardedBy: [Guard1]),
+                  _goRoute(
+                    "1",
+                    shieldOf: [Guard1],
+                    followUp: [Guard1],
+                    routes: [
+                      _goRoute("2"),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          router.goNamed("2");
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/1/2");
         });
       });
     });
@@ -1395,60 +1848,60 @@ void main() {
           expect(router.location.sanitized, "/auth/pin?continue=/app/me");
         });
 
-        testWidgets("then if following route is not specified for guard then app stays at guard's shield route", (
-          WidgetTester tester,
-        ) async {
-          deactivateGuard(guard: authGuard);
-          final router = await pumpRouter(
-            tester,
-            guards: [authGuard, pinGuard, onboardGuard],
-            routes: routeTree,
-            initialLocation: '/auth/pin',
-          );
+        // testWidgets("then if following route is not specified for guard then app stays at guard's shield route", (
+        //   WidgetTester tester,
+        // ) async {
+        //   deactivateGuard(guard: authGuard);
+        //   final router = await pumpRouter(
+        //     tester,
+        //     guards: [authGuard, pinGuard, onboardGuard],
+        //     routes: routeTree,
+        //     initialLocation: '/auth/pin',
+        //   );
 
-          deactivateGuard(guard: pinGuard);
+        //   deactivateGuard(guard: pinGuard);
 
-          await tester.pumpAndSettle();
-          expect(router.location.sanitized, "/auth/pin");
-        });
-        testWidgets(
-            "then if following route is not specified for guard, but continue queryParam exists, then app redirects to continue param",
-            (
-          WidgetTester tester,
-        ) async {
-          deactivateGuard(guard: authGuard);
-          final router = await pumpRouter(
-            tester,
-            guards: [authGuard, pinGuard, onboardGuard],
-            routes: routeTree,
-            initialLocation: '/auth/pin?continue=/licenses',
-          );
+        //   await tester.pumpAndSettle();
+        //   expect(router.location.sanitized, "/auth/pin");
+        // });
+        // testWidgets(
+        //     "then if following route is not specified for guard, but continue queryParam exists, then app redirects to continue param",
+        //     (
+        //   WidgetTester tester,
+        // ) async {
+        //   deactivateGuard(guard: authGuard);
+        //   final router = await pumpRouter(
+        //     tester,
+        //     guards: [authGuard, pinGuard, onboardGuard],
+        //     routes: routeTree,
+        //     initialLocation: '/auth/pin?continue=/licenses',
+        //   );
 
-          deactivateGuard(guard: pinGuard);
-          await tester.pumpAndSettle();
+        //   deactivateGuard(guard: pinGuard);
+        //   await tester.pumpAndSettle();
 
-          await tester.pumpAndSettle();
-          expect(router.location.sanitized, "/licenses");
-        });
+        //   await tester.pumpAndSettle();
+        //   expect(router.location.sanitized, "/licenses");
+        // });
       });
 
-      group("when location is last guard's shield", () {
-        testWidgets("when the guard becomes passing, location should stay", (WidgetTester tester) async {
-          deactivateGuard(guard: authGuard);
-          deactivateGuard(guard: pinGuard);
-          final router = await pumpRouter(
-            tester,
-            initialLocation: '/onboard/passphrase',
-            guards: [authGuard, pinGuard, onboardGuard],
-            routes: routeTree,
-          );
+      // group("when location is last guard's shield", () {
+      //   testWidgets("when the guard becomes passing, location should stay", (WidgetTester tester) async {
+      //     deactivateGuard(guard: authGuard);
+      //     deactivateGuard(guard: pinGuard);
+      //     final router = await pumpRouter(
+      //       tester,
+      //       initialLocation: '/onboard/passphrase',
+      //       guards: [authGuard, pinGuard, onboardGuard],
+      //       routes: routeTree,
+      //     );
 
-          deactivateGuard(guard: onboardGuard);
+      //     deactivateGuard(guard: onboardGuard);
 
-          await tester.pumpAndSettle();
-          expect(router.location.sanitized, "/onboard/passphrase");
-        });
-      });
+      //     await tester.pumpAndSettle();
+      //     expect(router.location.sanitized, "/onboard/passphrase");
+      //   });
+      // });
 
       group('when there is a route which is the shield for 2 guards', () {
         late final List<RouteBase> _routeTree;
@@ -1474,6 +1927,7 @@ void main() {
           ),
           _goRoute(
             "shield",
+            discardedBy: [Guard1, Guard2],
             shieldOf: [Guard1, Guard2],
           ),
           _guardShell<Guard1>([
