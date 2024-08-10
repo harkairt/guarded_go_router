@@ -114,8 +114,8 @@ class GuardedGoRouter {
     };
   }
 
-  String? _loggingGuardingRedirect(BuildContext context, GoRouterState state) {
-    final redirectResult = _guardingRedirect(context, state);
+  Future<String?> _loggingGuardingRedirect(BuildContext context, GoRouterState state) async {
+    final redirectResult = await _guardingRedirect(context, state);
     if (redirectResult == null) {
       timedDebugPrint("✋🏾 ${state.uri.toString().sanitized}");
     } else {
@@ -160,7 +160,7 @@ class GuardedGoRouter {
     }
   }
 
-  String? _guardingRedirect(BuildContext context, GoRouterState state) {
+  Future<String?> _guardingRedirect(BuildContext context, GoRouterState state) async {
     final thisRoute = _routes.traverseFirstWhereOrNull(
       (item) => item is GuardAwareGoRoute && goRouter.isAtLocation(state, item),
     ) as GuardAwareGoRoute?;
@@ -171,7 +171,7 @@ class GuardedGoRouter {
     final thisName = thisRoute.name ?? state.name ?? 'missing name';
     final discardingGuards = _getGuardsThatAreDiscardingThisRoute(thisName);
 
-    if (discardingGuards.isNotEmpty && discardingGuards.every((g) => g._logPasses(debugLog))) {
+    if (discardingGuards.isNotEmpty && await discardingGuards.asyncEvery((g) => g._logPasses(debugLog))) {
       final firstFollowUpRouteName = _followingRouteNames[discardingGuards.first];
 
       if (firstFollowUpRouteName == null) {
@@ -187,7 +187,7 @@ class GuardedGoRouter {
 
     final guardsShieldingOnThisRoute = _guards.where((g) => thisRoute.shieldOf.contains(g.runtimeType));
     final enclosingGuards = _getGuardShells(thisName);
-    final firstBlockingGuard = enclosingGuards.firstWhereOrNull((c) => c.guard._logBlocks(debugLog));
+    final firstBlockingGuard = await enclosingGuards.asyncFirstWhereOrNull((c) => c.guard._logBlocks(debugLog));
     if (firstBlockingGuard != null) {
       final blockingShieldName = _getShieldRouteName(firstBlockingGuard.guard);
 
@@ -208,7 +208,7 @@ class GuardedGoRouter {
     }
 
     if (guardsShieldingOnThisRoute.isNotEmpty) {
-      if (guardsShieldingOnThisRoute.any((guard) => guard._logBlocks(debugLog))) {
+      if (await guardsShieldingOnThisRoute.asyncEvery((guard) => guard._logBlocks(debugLog))) {
         return null;
       }
 
@@ -381,12 +381,13 @@ class GuardedGoRouter {
 }
 
 extension GoGuardX on GoGuard {
-  bool _logPasses(bool debugLog) {
+  Future<bool> _logPasses(bool debugLog) async {
     if (!debugLog) {
       return passes();
     }
 
-    if (passes()) {
+    timedDebugPrint('⚪️ $runtimeType');
+    if (await passes()) {
       timedDebugPrint('🟢 $runtimeType');
       return true;
     } else {
@@ -395,12 +396,13 @@ extension GoGuardX on GoGuard {
     }
   }
 
-  bool _logBlocks(bool debugLog) {
+  Future<bool> _logBlocks(bool debugLog) async {
     if (!debugLog) {
       return blocks();
     }
 
-    if (blocks()) {
+    timedDebugPrint('⚪️ $runtimeType');
+    if (await blocks()) {
       timedDebugPrint('🔴 $runtimeType');
       return true;
     } else {

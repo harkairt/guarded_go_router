@@ -29,7 +29,7 @@ extension GoRouteX on GoRoute {
   ) {
     final existingRedirect = this.redirect;
     if (existingRedirect == null) {
-      return copyWith(redirect: (context, state) => redirect(context, state));
+      return copyWith(redirect: (context, state) async => await redirect(context, state));
     } else {
       return copyWith(
         redirect: (context, state) async {
@@ -411,5 +411,43 @@ extension GoRouterStateX on GoRouterState {
       result = result.replaceAll(":${entry.key}", entry.value);
     }
     return result;
+  }
+}
+
+extension AsyncListExtension<T> on Iterable<T> {
+  Future<T?> asyncFirstWhereOrNull(Future<bool> Function(T it) test) async {
+    try {
+      return await Stream.fromIterable(this)
+          .asyncMap<T?>((it) async => await test(it) ? it : null)
+          .firstWhere((itOrNull) => itOrNull != null, orElse: () => null);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> asyncAny(Future<bool> Function(T element) test) async {
+    bool anyMatch = false;
+
+    await for (final element in Stream.fromIterable(this)) {
+      if (await test(element)) {
+        anyMatch = true;
+        break;
+      }
+    }
+
+    return anyMatch;
+  }
+
+  Future<bool> asyncEvery(Future<bool> Function(T element) test) async {
+    bool allMatch = true;
+
+    await for (final element in Stream.fromIterable(this)) {
+      if (!await test(element)) {
+        allMatch = false;
+        break;
+      }
+    }
+
+    return allMatch;
   }
 }

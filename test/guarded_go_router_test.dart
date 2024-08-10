@@ -80,14 +80,14 @@ void main() {
   }
 
   void activateGuard({required GoGuard guard}) {
-    when(() => guard.passes()).thenReturn(false);
-    when(() => guard.blocks()).thenReturn(true);
+    when(() => guard.passes()).thenAnswer((_) async => false);
+    when(() => guard.blocks()).thenAnswer((_) async => true);
     refreshListenable.notifyListeners();
   }
 
   void deactivateGuard({required GoGuard guard}) {
-    when(() => guard.passes()).thenReturn(true);
-    when(() => guard.blocks()).thenReturn(false);
+    when(() => guard.passes()).thenAnswer((_) async => true);
+    when(() => guard.blocks()).thenAnswer((_) async => false);
     refreshListenable.notifyListeners();
   }
 
@@ -442,7 +442,7 @@ void main() {
             router.goNamed("3");
 
             await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/followUp1");
+            expectLater(router.location.sanitized, "/followUp1");
           });
         });
       });

@@ -50,7 +50,7 @@ class GuardAwareGoRoute extends GoRoute {
   ) {
     final existingRedirect = this.redirect;
     if (existingRedirect == null) {
-      return copyWith(redirect: (context, state) => redirect(context, state));
+      return copyWith(redirect: (context, state) async => await redirect(context, state));
     } else {
       return copyWith(
         redirect: (context, state) async {
