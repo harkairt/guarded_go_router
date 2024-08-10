@@ -266,8 +266,6 @@ extension RouteBaseListX on List<RouteBase> {
   }
 }
 
-extension StatefulShellBranchListXX on StatefulShellRoute {}
-
 extension StatefulShellBranchListX on List<StatefulShellBranch> {
   List<StatefulShellBranch> traverseMap(RouteBase Function(RouteBase item) map) {
     final result = <StatefulShellBranch>[];
@@ -317,7 +315,7 @@ extension GoRouterX on GoRouter {
         queryParameters: state.uri.queryParametersAll,
       );
 
-      return _location == state.uri.toString();
+      return _location.sanitized == state.uri.toString().sanitized;
     }
 
     return false;
@@ -405,5 +403,13 @@ extension GoRouterStateX on GoRouterState {
       throw Exception("name is required");
     }
     return name!;
+  }
+
+  String get resolvedFullPath {
+    var result = fullPath!;
+    for (final entry in pathParameters.entries) {
+      result = result.replaceAll(":${entry.key}", entry.value);
+    }
+    return result;
   }
 }
