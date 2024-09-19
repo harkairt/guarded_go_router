@@ -1,7 +1,6 @@
 // ignore: unnecessary_library_directive
 library guarded_go_router;
 
-export 'src/deep_link_handler.dart';
 export 'src/extensions.dart';
 export 'src/go_guard.dart';
 export 'src/go_notifier.dart';
