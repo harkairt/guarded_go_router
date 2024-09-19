@@ -33,11 +33,11 @@ class GuardedGoRouter {
   final ChildWidgetBuilder pageWrapper;
 
   /// Corresponds to [MaterialApp.router]'s [builder] parameter. Important: for this to take effect you need to
-  /// hook in [GuardedGoRouter]'s [deepLinkBuilder] into [MaterialApp.router]'s [builder].
+  /// hook in [GuardedGoRouter]'s [appBuilderDelegate] into [MaterialApp.router]'s [builder].
   final ChildWidgetBuilder routerWrapper;
 
   late GoRouter goRouter;
-  late DeepLinkHandlingBuilder deepLinkBuilder;
+  late DeepLinkHandlingBuilder appBuilderDelegate;
 
   final bool debugLog;
   final InfiniteLoopRedirectLatch latch = InfiniteLoopRedirectLatch();
@@ -104,14 +104,7 @@ class GuardedGoRouter {
       ),
     );
 
-    deepLinkBuilder = (context, child) {
-      return routerWrapper(
-        DeepLinkHandler(
-          goRouter: goRouter,
-          child: child ?? const SizedBox(),
-        ),
-      );
-    };
+    appBuilderDelegate = (context, child) => routerWrapper(child ?? const SizedBox());
   }
 
   String? _loggingGuardingRedirect(BuildContext context, GoRouterState state) {
