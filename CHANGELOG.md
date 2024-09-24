@@ -1,3 +1,7 @@
+## 0.0.3
+
+- fix: make guard redirects have higher precedence than explicit redirects
+
 ## 0.0.2
 
 - fix: remove `DeepLinkHandler` and `uni_links` package
