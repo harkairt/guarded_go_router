@@ -885,6 +885,104 @@ void main() {
             await tester.pumpAndSettle();
             expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
           });
+
+          testWidgets("ignoring the explicit redirect of (a root) destination route", (
+            WidgetTester tester,
+          ) async {
+            final router = await pumpRouter(
+              tester,
+              initialLocation: '/consultationPage',
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _goRoute(
+                        "consultationPage",
+                        redirect: (context, state) => '/anotherPage',
+                      ),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/consultationPage");
+          });
+
+          testWidgets("ignoring the explicit redirect of (a non-root) destination route", (
+            WidgetTester tester,
+          ) async {
+            final router = await pumpRouter(
+              tester,
+              initialLocation: '/consultation/page',
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _goRoute(
+                        "consultation",
+                        routes: [
+                          _goRoute(
+                            "page",
+                            redirect: (context, state) => '/anotherPage',
+                          ),
+                        ],
+                      ),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/consultation/page");
+          });
+
+          testWidgets("ignoring the explicit redirect of an ancestor of a destination route", (
+            WidgetTester tester,
+          ) async {
+            final router = await pumpRouter(
+              tester,
+              initialLocation: '/consultation/page',
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _goRoute(
+                        "consultation",
+                        redirect: (context, state) => '/anotherPage',
+                        routes: [
+                          _goRoute(
+                            "page",
+                          ),
+                        ],
+                      ),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/consultation/page");
+          });
+
           testWidgets("without appending continue param if the route redirected from a shield of a guard", (
             WidgetTester tester,
           ) async {
@@ -980,6 +1078,45 @@ void main() {
 
           await tester.pumpAndSettle();
           expect(router.location.sanitized, "/root/1/2/3");
+        });
+
+        testWidgets("then resolve destination route's redirect", (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1, guard2, guard3],
+            routes: [
+              _goRoute("shield1", shieldOf: [Guard1]),
+              _goRoute("shield2", shieldOf: [Guard2]),
+              _goRoute("shield3", shieldOf: [Guard3]),
+              _goRoute(
+                "root",
+                routes: [
+                  _guardShell<Guard1>([
+                    _goRoute(
+                      "1",
+                      routes: [
+                        _guardShell<Guard2>([
+                          _goRoute(
+                            "2",
+                            routes: [
+                              _guardShell<Guard3>([
+                                _goRoute("3", redirect: (context, state) => '/root/1'),
+                              ]),
+                            ],
+                          ),
+                        ]),
+                      ],
+                    ),
+                  ]),
+                ],
+              ),
+            ],
+          );
+
+          router.goNamed("3");
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/root/1");
         });
 
         testWidgets('then resolve continue path if exists', (WidgetTester tester) async {

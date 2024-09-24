@@ -54,16 +54,17 @@ class GuardAwareGoRoute extends GoRoute {
     } else {
       return copyWith(
         redirect: (context, state) async {
-          // This is done like so to "not use BuildContexts across async gaps",
-          // but optimally it should only be evaluated when the original redirect function returns null.
           final appendedRedirectResult = redirect(context, state);
+          if (appendedRedirectResult != null) {
+            return appendedRedirectResult;
+          }
 
           final existingRedirectResult = await existingRedirect(context, state);
           if (existingRedirectResult != null) {
             return existingRedirectResult;
           }
 
-          return appendedRedirectResult;
+          return null;
         },
       );
     }
