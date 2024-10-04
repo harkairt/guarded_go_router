@@ -13,6 +13,7 @@ extension GoRouteX on GoRoute {
     GlobalKey<NavigatorState>? parentNavigatorKey,
     FutureOr<String?> Function(BuildContext, GoRouterState)? redirect,
     List<RouteBase>? routes,
+    FutureOr<bool> Function(BuildContext)? onExit,
   }) =>
       GoRoute(
         name: name,
@@ -22,6 +23,7 @@ extension GoRouteX on GoRoute {
         pageBuilder: pageBuilder ?? this.pageBuilder,
         parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
         routes: routes ?? this.routes,
+        onExit: onExit ?? this.onExit,
       );
 
   GoRoute appendRedirect(
@@ -56,12 +58,18 @@ extension ShellRouteX on ShellRoute {
     Page<dynamic> Function(BuildContext, GoRouterState, Widget)? pageBuilder,
     GlobalKey<NavigatorState>? navigatorKey,
     List<RouteBase>? routes,
+    List<NavigatorObserver>? observers,
+    GlobalKey<NavigatorState>? parentNavigatorKey,
+    String? restorationScopeId,
   }) =>
       ShellRoute(
         builder: builder ?? this.builder,
         pageBuilder: pageBuilder ?? this.pageBuilder,
         routes: routes ?? this.routes,
         navigatorKey: navigatorKey ?? this.navigatorKey,
+        observers: observers ?? this.observers,
+        parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
+        restorationScopeId: restorationScopeId ?? this.restorationScopeId,
       );
 }
 
