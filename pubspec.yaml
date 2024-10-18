@@ -1,11 +1,11 @@
 name: guarded_go_router
-description: guarded_go_router
+description: This package aims to provide a guard mechanism to a project using go_router and riverpod
 repository: https://github.com/harkairt/guarded_go_router
 version: 0.0.3
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.13.0"
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.2"
 
 dependencies:
   collection: ^1.17.2
@@ -16,10 +16,7 @@ dependencies:
   hooks_riverpod: ^2.1.3
 
 dev_dependencies:
-  flutter_lints: ^3.0.0
   flutter_test:
     sdk: flutter
   lint: ^2.1.2
   mocktail: ^1.0.1
-
-flutter:
