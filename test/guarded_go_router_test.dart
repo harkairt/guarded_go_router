@@ -122,11 +122,13 @@ void main() {
   GuardShell<GuardType> _guardShell<GuardType extends GoGuard>(
     List<RouteBase> routes, {
     bool savesLocation = true,
+    bool clearsContinue = false,
     GlobalKey<NavigatorState>? navigatorKey,
   }) {
     return GuardShell<GuardType>(
       routes,
       savesLocation: savesLocation,
+      clearsContinue: clearsContinue,
       navigatorKey: navigatorKey,
     );
   }
@@ -1023,6 +1025,68 @@ void main() {
             );
 
             router.goNamed("2");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2");
+          });
+
+          testWidgets("does not add continue query param if guardShell defines so", (
+            WidgetTester tester,
+          ) async {
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>(
+                    clearsContinue: true,
+                    [
+                      _guardShell<Guard3>([
+                        _goRoute(
+                          "consultation",
+                        ),
+                      ]),
+                    ],
+                  ),
+                ]),
+              ],
+            );
+
+            router.goNamed('consultation');
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2");
+          });
+
+          testWidgets("removes continue query param if guardShell defines so", (
+            WidgetTester tester,
+          ) async {
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>(
+                    clearsContinue: true,
+                    [
+                      _guardShell<Guard3>([
+                        _goRoute("consultation"),
+                        _goRoute("anotherInnerPage"),
+                      ]),
+                    ],
+                  ),
+                ]),
+              ],
+            );
+
+            router.go('/consultation?continue=/anotherInnerPage');
 
             await tester.pumpAndSettle();
             expect(router.location.sanitized, "/shield2");

@@ -279,7 +279,7 @@ extension StatefulShellBranchListX on List<StatefulShellBranch> {
   }
 }
 
-extension StringX on String? {
+extension NullableStringExtensions on String? {
   String? get sanitized =>
       this?.replaceAll("%2F", "/").replaceAll("%3F", "?").replaceAll("%3D", '=').replaceAll("%252F", "/");
 
@@ -293,6 +293,17 @@ extension StringX on String? {
     queryParams[key] = value;
 
     return Uri(path: this, queryParameters: queryParams).toString();
+  }
+}
+
+extension StringExtensions on String {
+  String removeContinuePath() {
+    final newUri = Uri(path: Uri.parse(this).path);
+
+    return Uri(
+      path: newUri.path,
+      queryParameters: <String, dynamic>{...newUri.queryParameters}..remove("continue"),
+    ).path;
   }
 }
 

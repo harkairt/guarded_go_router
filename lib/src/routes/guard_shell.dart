@@ -7,10 +7,12 @@ class GuardShell<GuardType extends GoGuard> extends ShellRoute {
   /// the associated shield route of that guard and also append the original destination as `continue` query param.
   /// When `savesLocation` is set to false, then the original destination is ignored and the app simply redirects to the shield route
   final bool savesLocation;
+  final bool clearsContinue;
 
   GuardShell(
     List<RouteBase> routes, {
     this.savesLocation = true,
+    this.clearsContinue = false,
     super.navigatorKey,
   }) : super(routes: routes);
 
@@ -30,6 +32,7 @@ class GuardShell<GuardType extends GoGuard> extends ShellRoute {
       GuardShell<GuardType>(
         routes ?? this.routes,
         savesLocation: savesLocation,
+        clearsContinue: clearsContinue,
         navigatorKey: navigatorKey ?? this.navigatorKey,
       );
 }
