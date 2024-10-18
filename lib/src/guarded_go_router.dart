@@ -189,12 +189,24 @@ class GuardedGoRouter {
       final routeIgnoreAsContinue = thisRoute.ignoreAsContinueLocation;
 
       if (isThisAShieldRoute || _isNeglectingContinue || routeIgnoreAsContinue || !guardSavesLocation) {
-        return goRouter.namedLocation(blockingShieldName, queryParameters: state.uri.queryParameters);
+        final destination = goRouter.namedLocation(blockingShieldName, queryParameters: state.uri.queryParameters);
+        if (firstBlockingGuard.clearsContinue) {
+          return destination.removeContinuePath();
+        }
+        return destination;
       }
 
       final resolvedContinuePath = state.maybeResolveContinuePath();
       if (resolvedContinuePath != null) {
-        return goRouter.namedLocation(blockingShieldName, queryParameters: state.uri.queryParameters);
+        final Map<String, String> queryParameters = {...state.uri.queryParameters};
+        if (firstBlockingGuard.clearsContinue) {
+          queryParameters.remove('continue');
+        }
+        return goRouter.namedLocation(blockingShieldName, queryParameters: queryParameters);
+      }
+
+      if (firstBlockingGuard.clearsContinue) {
+        return goRouter.namedLocation(blockingShieldName);
       }
 
       return goRouter.namedLocationCaptureContinue(blockingShieldName, state);
@@ -254,7 +266,11 @@ class GuardedGoRouter {
     return guards.map(
       (guard) {
         final shell = guardShellRoutes.firstWhere((element) => element.guardType == guard.runtimeType);
-        return _GuardShellContext(guard: guard, savesLocation: shell.savesLocation);
+        return _GuardShellContext(
+          guard: guard,
+          savesLocation: shell.savesLocation,
+          clearsContinue: shell.clearsContinue,
+        );
       },
     ).toList();
   }
@@ -407,8 +423,10 @@ class _GuardShellContext<T extends GoGuard> {
   _GuardShellContext({
     required this.guard,
     required this.savesLocation,
+    required this.clearsContinue,
   });
 
   final T guard;
   final bool savesLocation;
+  final bool clearsContinue;
 }
