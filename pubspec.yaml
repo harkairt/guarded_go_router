@@ -1,7 +1,7 @@
 name: guarded_go_router
 description: This package aims to provide a guard mechanism to a project using go_router and riverpod
 repository: https://github.com/harkairt/guarded_go_router
-version: 0.0.3
+version: 0.0.4
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
