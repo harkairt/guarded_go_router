@@ -1,3 +1,7 @@
+## 0.0.5
+
+- feat: `DestinationPersistence`
+
 ## 0.0.4
 
 - chore: update Flutter version to 3.19.2
