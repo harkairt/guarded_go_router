@@ -121,14 +121,12 @@ void main() {
 
   GuardShell<GuardType> _guardShell<GuardType extends GoGuard>(
     List<RouteBase> routes, {
-    bool savesLocation = true,
-    bool clearsContinue = false,
+    DestinationPersistence destinationPersistence = DestinationPersistence.store,
     GlobalKey<NavigatorState>? navigatorKey,
   }) {
     return GuardShell<GuardType>(
       routes,
-      savesLocation: savesLocation,
-      clearsContinue: clearsContinue,
+      destinationPersistence: destinationPersistence,
       navigatorKey: navigatorKey,
     );
   }
@@ -800,48 +798,6 @@ void main() {
           });
 
           testWidgets(
-              "without appending continue param if destination is protected by a guard which does not save location",
-              (WidgetTester tester) async {
-            final router = await pumpRouter(
-              tester,
-              guards: [guard1, guard2],
-              routes: [
-                _goRoute("shield1", shieldOf: [Guard1]),
-                _goRoute("shield2", shieldOf: [Guard2]),
-                _goRoute("shield3", shieldOf: [Guard3]),
-                _goRoute(
-                  "root",
-                  routes: [
-                    _guardShell<Guard1>([
-                      _goRoute(
-                        "1",
-                        routes: [
-                          _guardShell<Guard2>(savesLocation: false, [
-                            _goRoute(
-                              "2",
-                              routes: [
-                                _guardShell<Guard3>(
-                                  [
-                                    _goRoute("3"),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ]),
-                        ],
-                      ),
-                    ]),
-                  ],
-                ),
-              ],
-            );
-
-            router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
-
-            await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2?continue=/route");
-          });
-          testWidgets(
               "with carrying over existing continue param even if the route redirected from is also a shield of a guard",
               (
             WidgetTester tester,
@@ -985,7 +941,7 @@ void main() {
             expect(router.location.sanitized, "/shield2?continue=/consultation/page");
           });
 
-          testWidgets("without appending continue param if the route redirected from a shield of a guard", (
+          testWidgets("with appending continue param if the route redirected from a shield of a guard", (
             WidgetTester tester,
           ) async {
             reset(guard4);
@@ -1027,72 +983,310 @@ void main() {
             router.goNamed("2");
 
             await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2");
+            expect(router.location.sanitized, "/shield2?continue=/root/1/2");
           });
 
-          testWidgets("does not add continue query param if guardShell defines so", (
-            WidgetTester tester,
-          ) async {
-            final router = await pumpRouter(
-              tester,
-              guards: [guard1, guard2, guard3],
-              routes: [
-                _goRoute("shield1", shieldOf: [Guard1]),
-                _goRoute("shield2", shieldOf: [Guard2]),
-                _goRoute("shield3", shieldOf: [Guard3]),
-                _goRoute("anotherPage"),
-                _guardShell<Guard1>([
-                  _guardShell<Guard2>(
-                    clearsContinue: true,
-                    [
-                      _guardShell<Guard3>([
-                        _goRoute(
-                          "consultation",
+          group('DestinationPersistence', () {
+            group('store', () {
+              testWidgets("without overriding continue param if going with an existing continue param",
+                  (WidgetTester tester) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _goRoute(
+                      "root",
+                      routes: [
+                        _guardShell<Guard1>([
+                          _goRoute(
+                            "1",
+                            routes: [
+                              // ignore: avoid_redundant_argument_values
+                              _guardShell<Guard2>(destinationPersistence: DestinationPersistence.store, [
+                                _goRoute(
+                                  "2",
+                                  routes: [
+                                    _guardShell<Guard3>(
+                                      [
+                                        _goRoute("3"),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ]),
+                            ],
+                          ),
+                        ]),
+                      ],
+                    ),
+                  ],
+                );
+
+                router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
+
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2?continue=/route");
+              });
+              testWidgets("with storing current location if there is no continue param", (WidgetTester tester) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _goRoute(
+                      "root",
+                      routes: [
+                        _guardShell<Guard1>([
+                          _goRoute(
+                            "1",
+                            routes: [
+                              // ignore: avoid_redundant_argument_values
+                              _guardShell<Guard2>(destinationPersistence: DestinationPersistence.store, [
+                                _goRoute(
+                                  "2",
+                                  routes: [
+                                    _guardShell<Guard3>(
+                                      [
+                                        _goRoute("3"),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ]),
+                            ],
+                          ),
+                        ]),
+                      ],
+                    ),
+                  ],
+                );
+
+                router.goNamed("3");
+
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
+              });
+            });
+
+            group('ignore', () {
+              testWidgets("without overriding continue param if going with an existing continue param",
+                  (WidgetTester tester) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _goRoute(
+                      "root",
+                      routes: [
+                        _guardShell<Guard1>([
+                          _goRoute(
+                            "1",
+                            routes: [
+                              _guardShell<Guard2>(destinationPersistence: DestinationPersistence.ignore, [
+                                _goRoute(
+                                  "2",
+                                  routes: [
+                                    _guardShell<Guard3>(
+                                      [
+                                        _goRoute("3"),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ]),
+                            ],
+                          ),
+                        ]),
+                      ],
+                    ),
+                  ],
+                );
+
+                router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
+
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2?continue=/route");
+              });
+              testWidgets("does not add continue query param", (
+                WidgetTester tester,
+              ) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2, guard3],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _goRoute("anotherPage"),
+                    _guardShell<Guard1>([
+                      _guardShell<Guard2>(
+                        destinationPersistence: DestinationPersistence.ignore,
+                        [
+                          _guardShell<Guard3>([
+                            _goRoute(
+                              "consultation",
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ]),
+                  ],
+                );
+
+                router.goNamed('consultation');
+
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2");
+              });
+            });
+
+            group('clear', () {
+              testWidgets("removes explicit continue query param", (
+                WidgetTester tester,
+              ) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2, guard3],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _guardShell<Guard1>([
+                      _guardShell<Guard2>(
+                        destinationPersistence: DestinationPersistence.clear,
+                        [
+                          _guardShell<Guard3>([
+                            _goRoute("consultation"),
+                            _goRoute("anotherInnerPage"),
+                          ]),
+                        ],
+                      ),
+                    ]),
+                  ],
+                );
+
+                router.go('/consultation?continue=/anotherInnerPage');
+
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2");
+              });
+              testWidgets("removes continue query param added by previous guard", (
+                WidgetTester tester,
+              ) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2, guard3],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _guardShell<Guard1>([
+                      _guardShell<Guard2>([
+                        _guardShell<Guard3>(
+                          destinationPersistence: DestinationPersistence.clear,
+                          [
+                            _goRoute("consultation"),
+                            _goRoute("anotherInnerPage"),
+                          ],
                         ),
                       ]),
-                    ],
-                  ),
-                ]),
-              ],
-            );
+                    ]),
+                  ],
+                );
 
-            router.goNamed('consultation');
+                router.go('/consultation?continue=/anotherInnerPage');
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2?continue=/anotherInnerPage");
+                deactivateGuard(guard: guard2);
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield3");
+              });
 
-            await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2");
-          });
+              testWidgets("with clearing continue param if going with an existing continue param",
+                  (WidgetTester tester) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _goRoute(
+                      "root",
+                      routes: [
+                        _guardShell<Guard1>([
+                          _goRoute(
+                            "1",
+                            routes: [
+                              _guardShell<Guard2>(destinationPersistence: DestinationPersistence.clear, [
+                                _goRoute(
+                                  "2",
+                                  routes: [
+                                    _guardShell<Guard3>(
+                                      [
+                                        _goRoute("3"),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ]),
+                            ],
+                          ),
+                        ]),
+                      ],
+                    ),
+                  ],
+                );
 
-          testWidgets("removes continue query param if guardShell defines so", (
-            WidgetTester tester,
-          ) async {
-            final router = await pumpRouter(
-              tester,
-              guards: [guard1, guard2, guard3],
-              routes: [
-                _goRoute("shield1", shieldOf: [Guard1]),
-                _goRoute("shield2", shieldOf: [Guard2]),
-                _goRoute("shield3", shieldOf: [Guard3]),
-                _guardShell<Guard1>([
-                  _guardShell<Guard2>(
-                    clearsContinue: true,
-                    [
-                      _guardShell<Guard3>([
-                        _goRoute("consultation"),
-                        _goRoute("anotherInnerPage"),
-                      ]),
-                    ],
-                  ),
-                ]),
-              ],
-            );
+                router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
-            router.go('/consultation?continue=/anotherInnerPage');
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2");
+              });
+              testWidgets("does not add continue query param", (
+                WidgetTester tester,
+              ) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2, guard3],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _goRoute("anotherPage"),
+                    _guardShell<Guard1>([
+                      _guardShell<Guard2>(
+                        destinationPersistence: DestinationPersistence.ignore,
+                        [
+                          _guardShell<Guard3>([
+                            _goRoute(
+                              "consultation",
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ]),
+                  ],
+                );
 
-            await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2");
+                router.goNamed('consultation');
+
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2");
+              });
+            });
           });
         });
       });
+
       group('every() passes', () {
         setUp(() {
           reset(guard1);
@@ -2232,7 +2426,7 @@ void main() {
         router.goNamed("pin");
 
         await tester.pumpAndSettle();
-        expect(router.location.sanitized, "/auth/login");
+        expect(router.location.sanitized, "/auth/login?continue=/auth/pin");
       });
 
       testWidgets("subordinate path should be redirect away from to first passing guard's following path",

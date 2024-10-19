@@ -175,6 +175,17 @@ class GuardedGoRouter {
         return null;
       }
 
+      final resolvedContinuePath = state.maybeResolveContinuePath();
+      if (resolvedContinuePath != null) {
+        if (goRouter.namedLocation(firstFollowUpRouteName) == resolvedContinuePath) {
+          return goRouter.namedLocation(
+            firstFollowUpRouteName,
+            queryParameters: {...state.uri.queryParametersAll}..remove("continue"),
+            pathParameters: state.pathParameters,
+          );
+        }
+      }
+
       return goRouter.namedLocationFrom(state, firstFollowUpRouteName);
     }
 
@@ -184,28 +195,23 @@ class GuardedGoRouter {
     if (firstBlockingGuard != null) {
       final blockingShieldName = _getShieldRouteName(firstBlockingGuard.guard);
 
-      final isThisAShieldRoute = guardsShieldingOnThisRoute.isNotEmpty;
-      final guardSavesLocation = firstBlockingGuard.savesLocation;
+      final destinationPersistence = firstBlockingGuard.destinationPersistence;
       final routeIgnoreAsContinue = thisRoute.ignoreAsContinueLocation;
 
-      if (isThisAShieldRoute || _isNeglectingContinue || routeIgnoreAsContinue || !guardSavesLocation) {
-        final destination = goRouter.namedLocation(blockingShieldName, queryParameters: state.uri.queryParameters);
-        if (firstBlockingGuard.clearsContinue) {
-          return destination.removeContinuePath();
-        }
-        return destination;
+      if (_isNeglectingContinue || routeIgnoreAsContinue || destinationPersistence == DestinationPersistence.ignore) {
+        return goRouter.namedLocation(blockingShieldName, queryParameters: state.uri.queryParameters);
       }
 
       final resolvedContinuePath = state.maybeResolveContinuePath();
       if (resolvedContinuePath != null) {
         final Map<String, String> queryParameters = {...state.uri.queryParameters};
-        if (firstBlockingGuard.clearsContinue) {
+        if (destinationPersistence == DestinationPersistence.clear) {
           queryParameters.remove('continue');
         }
         return goRouter.namedLocation(blockingShieldName, queryParameters: queryParameters);
       }
 
-      if (firstBlockingGuard.clearsContinue) {
+      if (destinationPersistence == DestinationPersistence.clear) {
         return goRouter.namedLocation(blockingShieldName);
       }
 
@@ -268,8 +274,7 @@ class GuardedGoRouter {
         final shell = guardShellRoutes.firstWhere((element) => element.guardType == guard.runtimeType);
         return _GuardShellContext(
           guard: guard,
-          savesLocation: shell.savesLocation,
-          clearsContinue: shell.clearsContinue,
+          destinationPersistence: shell.destinationPersistence,
         );
       },
     ).toList();
@@ -422,11 +427,9 @@ extension GoGuardX on GoGuard {
 class _GuardShellContext<T extends GoGuard> {
   _GuardShellContext({
     required this.guard,
-    required this.savesLocation,
-    required this.clearsContinue,
+    required this.destinationPersistence,
   });
 
   final T guard;
-  final bool savesLocation;
-  final bool clearsContinue;
+  final DestinationPersistence destinationPersistence;
 }
