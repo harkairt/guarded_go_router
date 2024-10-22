@@ -1,3 +1,7 @@
+## 0.0.7
+
+- fix: resolve guards in treePath in order of appearance instead of definition
+
 ## 0.0.6
 
 - feat: support path parameters
