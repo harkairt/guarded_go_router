@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
@@ -312,25 +313,51 @@ extension GoRouterX on GoRouter {
     return routeInformationProvider.value.uri.toString();
   }
 
-  String? namedLocationFrom(GoRouterState state, String name, {String? continuePath}) {
+  String? namedLocationFrom({
+    required GoRouterState state,
+    required String name,
+    DestinationPersistence destinationPersistence = DestinationPersistence.store,
+    String? continuePath,
+  }) {
+    final continuePath = state.maybeResolveContinuePath();
+
+    final pathParameterKeys = configuration.routes.getTreePath(routeName: name)?.map((e) {
+          if (e is GoRoute) {
+            // ignore: invalid_use_of_internal_member
+            return e.pathParameters;
+          }
+          return <String>[];
+        }).flattened ??
+        [];
+
+    final Map<String, String> pathParameters = {};
+    for (final key in pathParameterKeys) {
+      pathParameters[key] = state.pathParameters[key]!;
+    }
+    final destinationPath = namedLocation(name, pathParameters: pathParameters);
+
+    if (destinationPath == continuePath || destinationPersistence == DestinationPersistence.clear) {
+      return namedLocation(
+        name,
+        pathParameters: pathParameters,
+        queryParameters: state.uri.queryParametersAllWithoutContinue,
+      );
+    }
+
+    if (destinationPersistence == DestinationPersistence.store) {
+      final existingOrCurrentContinue = continuePath ?? state.uri.toString();
+      return namedLocation(
+        name,
+        pathParameters: pathParameters,
+        queryParameters: {"continue": existingOrCurrentContinue},
+      );
+    }
+
     return namedLocation(name, pathParameters: state.pathParameters, queryParameters: state.uri.queryParametersAll);
   }
 
   bool isAtLocation(GoRouterState state, GuardAwareGoRoute item) {
-    // This check is because of [namedLocation] is asserting if there is
-    // any extra pathParameters which is not required by the matched route.
-    // ignore: invalid_use_of_internal_member
-    if (listEquals(item.pathParameters, state.pathParameters.keys.toList())) {
-      final _location = namedLocation(
-        item.name!,
-        pathParameters: state.pathParameters,
-        queryParameters: state.uri.queryParametersAll,
-      );
-
-      return _location.sanitized == state.uri.toString().sanitized;
-    }
-
-    return false;
+    return (state.topRoute?.name ?? state.name) == item.name;
   }
 
   String? namedLocationCaptureContinue(String name, GoRouterState state) {
@@ -424,4 +451,8 @@ extension GoRouterStateX on GoRouterState {
     }
     return result;
   }
+}
+
+extension UriX on Uri {
+  Map<String, List<String>> get queryParametersAllWithoutContinue => {...queryParametersAll}..remove('continue');
 }
