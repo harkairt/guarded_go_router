@@ -941,6 +941,42 @@ void main() {
             expect(router.location.sanitized, "/shield2?continue=/consultation/page");
           });
 
+          testWidgets("and some earlier enclosing guard becomes active then should go to earlier guard's shield path", (
+            WidgetTester tester,
+          ) async {
+            final router = await pumpRouter(
+              tester,
+              initialLocation: '/consultation/page',
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _guardShell<Guard3>([
+                      _goRoute(
+                        "consultation",
+                        routes: [
+                          _goRoute(
+                            "page",
+                          ),
+                        ],
+                      ),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/consultation/page");
+            activateGuard(guard: guard1);
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield1?continue=/consultation/page");
+          });
+
           testWidgets("with appending continue param if the route redirected from a shield of a guard", (
             WidgetTester tester,
           ) async {
@@ -984,6 +1020,88 @@ void main() {
 
             await tester.pumpAndSettle();
             expect(router.location.sanitized, "/shield2?continue=/root/1/2");
+          });
+          testWidgets("should work with path parameters", (
+            WidgetTester tester,
+          ) async {
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _goRoute(
+                        "book",
+                        routes: [
+                          _goRoute(
+                            "page",
+                            path: 'page/:id',
+                          ),
+                        ],
+                      ),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/book/page/123");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/book/page/123");
+          });
+          testWidgets("should work with path multiple parameters", (
+            WidgetTester tester,
+          ) async {
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard3>([
+                    _goRoute(
+                      "book",
+                      path: "book/:bookId",
+                      routes: [
+                        _guardShell<Guard2>(
+                          [
+                            _goRoute(
+                              "page",
+                              path: 'page/:pageId',
+                            ),
+                          ],
+                        ),
+                        _goRoute(
+                          "purchase",
+                          shieldOf: [Guard2],
+                        ),
+                      ],
+                    ),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/book/42/page/123");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield3?continue=/book/42/page/123");
+            deactivateGuard(guard: guard3);
+            await tester.pumpAndSettle();
+            deactivateGuard(guard: guard3);
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/book/42/purchase?continue=/book/42/page/123");
+            deactivateGuard(guard: guard2);
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/book/42/page/123");
           });
 
           group('DestinationPersistence', () {
@@ -1142,6 +1260,38 @@ void main() {
                 );
 
                 router.goNamed('consultation');
+
+                await tester.pumpAndSettle();
+                expect(router.location.sanitized, "/shield2");
+              });
+
+              testWidgets("resolves continue to the same shield as current location", (
+                WidgetTester tester,
+              ) async {
+                final router = await pumpRouter(
+                  tester,
+                  guards: [guard1, guard2, guard3],
+                  routes: [
+                    _goRoute("shield1", shieldOf: [Guard1]),
+                    _goRoute("shield2", shieldOf: [Guard2]),
+                    _goRoute("shield3", shieldOf: [Guard3]),
+                    _goRoute("anotherPage"),
+                    _guardShell<Guard1>([
+                      _guardShell<Guard2>(
+                        destinationPersistence: DestinationPersistence.ignore,
+                        [
+                          _guardShell<Guard3>([
+                            _goRoute(
+                              "consultation",
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ]),
+                  ],
+                );
+
+                router.go('/shield2?continue=/shield2');
 
                 await tester.pumpAndSettle();
                 expect(router.location.sanitized, "/shield2");

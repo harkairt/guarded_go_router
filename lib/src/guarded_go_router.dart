@@ -68,7 +68,7 @@ class GuardedGoRouter {
     required List<GoGuard> guards,
     required List<RouteBase> routes,
     required this.buildRouter,
-    this.debugLog = false,
+    this.debugLog = true,
     this.pageWrapper = noOpBuilder,
     this.routerWrapper = noOpBuilder,
   }) : _guards = guards {
@@ -177,20 +177,45 @@ class GuardedGoRouter {
 
       final resolvedContinuePath = state.maybeResolveContinuePath();
       if (resolvedContinuePath != null) {
-        if (goRouter.namedLocation(firstFollowUpRouteName) == resolvedContinuePath) {
-          return goRouter.namedLocation(
-            firstFollowUpRouteName,
-            queryParameters: {...state.uri.queryParametersAll}..remove("continue"),
-            pathParameters: state.pathParameters,
-          );
-        }
+        return resolvedContinuePath;
       }
 
-      return goRouter.namedLocationFrom(state, firstFollowUpRouteName);
+      return goRouter.namedLocationFrom(
+        state: state,
+        name: firstFollowUpRouteName,
+        destinationPersistence: DestinationPersistence.ignore,
+      );
     }
 
-    final guardsShieldingOnThisRoute = _guards.where((g) => thisRoute.shieldOf.contains(g.runtimeType));
     final enclosingGuards = _getGuardShells(thisName);
+
+    final guardsShieldingOnThisRoute = _guards.where((g) => thisRoute.shieldOf.contains(g.runtimeType));
+    if (guardsShieldingOnThisRoute.isNotEmpty) {
+      final pre = enclosingGuards.takeWhile((value) => !guardsShieldingOnThisRoute.contains(value.guard));
+      final firstBlockingEnclosingGuardBeforeShield = pre.firstWhereOrNull((c) => c.guard._logBlocks(debugLog));
+      if (firstBlockingEnclosingGuardBeforeShield == null) {
+        if (guardsShieldingOnThisRoute.any((guard) => guard._logBlocks(debugLog))) {
+          final continuePath = state.maybeResolveContinuePath();
+          if (continuePath == null) {
+            return null;
+          }
+
+          final thisPath = goRouter.namedLocation(thisName, pathParameters: state.pathParameters);
+          if (continuePath == thisPath) {
+            return goRouter.namedLocation(
+              thisName,
+              pathParameters: state.pathParameters,
+              queryParameters: state.uri.queryParametersAllWithoutContinue,
+            );
+          }
+
+          return null;
+        }
+
+        return state.maybeResolveContinuePath();
+      }
+    }
+
     final firstBlockingGuard = enclosingGuards.firstWhereOrNull((c) => c.guard._logBlocks(debugLog));
     if (firstBlockingGuard != null) {
       final blockingShieldName = _getShieldRouteName(firstBlockingGuard.guard);
@@ -198,39 +223,36 @@ class GuardedGoRouter {
       final destinationPersistence = firstBlockingGuard.destinationPersistence;
       final routeIgnoreAsContinue = thisRoute.ignoreAsContinueLocation;
 
-      if (_isNeglectingContinue || routeIgnoreAsContinue || destinationPersistence == DestinationPersistence.ignore) {
-        return goRouter.namedLocation(blockingShieldName, queryParameters: state.uri.queryParameters);
+      if (_isNeglectingContinue || routeIgnoreAsContinue) {
+        return goRouter.namedLocationFrom(
+          state: state,
+          name: blockingShieldName,
+          destinationPersistence: DestinationPersistence.ignore,
+        );
       }
 
       final resolvedContinuePath = state.maybeResolveContinuePath();
       if (resolvedContinuePath != null) {
-        final Map<String, String> queryParameters = {...state.uri.queryParameters};
-        if (destinationPersistence == DestinationPersistence.clear) {
-          queryParameters.remove('continue');
-        }
-        return goRouter.namedLocation(blockingShieldName, queryParameters: queryParameters);
-      }
-
-      if (destinationPersistence == DestinationPersistence.clear) {
-        return goRouter.namedLocation(blockingShieldName);
-      }
-
-      return goRouter.namedLocationCaptureContinue(blockingShieldName, state);
-    }
-
-    if (guardsShieldingOnThisRoute.isNotEmpty) {
-      if (guardsShieldingOnThisRoute.any((guard) => guard._logBlocks(debugLog))) {
-        return null;
-      }
-
-      return state.maybeResolveContinuePath();
-    }
-
-    final isAtRedirectOfLeaf = state.resolvedFullPath ==
-        goRouter.namedLocation(
-          state.requireName,
-          pathParameters: state.pathParameters,
+        return goRouter.namedLocationFrom(
+          state: state,
+          name: blockingShieldName,
+          destinationPersistence: destinationPersistence,
         );
+      }
+
+      return goRouter.namedLocationFrom(
+        state: state,
+        name: blockingShieldName,
+        destinationPersistence: destinationPersistence,
+      );
+    }
+
+    final currentPath = goRouter.namedLocationFrom(
+      state: state,
+      name: state.requireName,
+      destinationPersistence: DestinationPersistence.clear,
+    );
+    final isAtRedirectOfLeaf = state.resolvedFullPath == currentPath;
     if (isAtRedirectOfLeaf) {
       return state.maybeResolveContinuePath();
     }

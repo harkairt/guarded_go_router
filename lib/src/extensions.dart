@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:guarded_go_router/guarded_go_router.dart';
 
@@ -13,6 +13,7 @@ extension GoRouteX on GoRoute {
     GlobalKey<NavigatorState>? parentNavigatorKey,
     FutureOr<String?> Function(BuildContext, GoRouterState)? redirect,
     List<RouteBase>? routes,
+    FutureOr<bool> Function(BuildContext, GoRouterState)? onExit,
   }) =>
       GoRoute(
         name: name,
@@ -22,6 +23,7 @@ extension GoRouteX on GoRoute {
         pageBuilder: pageBuilder ?? this.pageBuilder,
         parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
         routes: routes ?? this.routes,
+        onExit: onExit ?? this.onExit,
       );
 
   GoRoute appendRedirect(
@@ -56,12 +58,20 @@ extension ShellRouteX on ShellRoute {
     Page<dynamic> Function(BuildContext, GoRouterState, Widget)? pageBuilder,
     GlobalKey<NavigatorState>? navigatorKey,
     List<RouteBase>? routes,
+    List<NavigatorObserver>? observers,
+    GlobalKey<NavigatorState>? parentNavigatorKey,
+    String? restorationScopeId,
+    GoRouterRedirect? redirect,
   }) =>
       ShellRoute(
         builder: builder ?? this.builder,
         pageBuilder: pageBuilder ?? this.pageBuilder,
         routes: routes ?? this.routes,
         navigatorKey: navigatorKey ?? this.navigatorKey,
+        observers: observers ?? this.observers,
+        parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
+        restorationScopeId: restorationScopeId ?? this.restorationScopeId,
+        redirect: redirect ?? this.redirect,
       );
 }
 
@@ -312,25 +322,50 @@ extension GoRouterX on GoRouter {
     return routeInformationProvider.value.uri.toString();
   }
 
-  String? namedLocationFrom(GoRouterState state, String name, {String? continuePath}) {
+  String? namedLocationFrom({
+    required GoRouterState state,
+    required String name,
+    DestinationPersistence destinationPersistence = DestinationPersistence.store,
+  }) {
+    final continuePath = state.maybeResolveContinuePath();
+
+    final pathParameterKeys = configuration.routes.getTreePath(routeName: name)?.map((e) {
+          if (e is GoRoute) {
+            // ignore: invalid_use_of_internal_member
+            return e.pathParameters;
+          }
+          return <String>[];
+        }).flattened ??
+        [];
+
+    final Map<String, String> pathParameters = {};
+    for (final key in pathParameterKeys) {
+      pathParameters[key] = state.pathParameters[key]!;
+    }
+    final destinationPath = namedLocation(name, pathParameters: pathParameters);
+
+    if (destinationPath == continuePath || destinationPersistence == DestinationPersistence.clear) {
+      return namedLocation(
+        name,
+        pathParameters: pathParameters,
+        queryParameters: state.uri.queryParametersAllWithoutContinue,
+      );
+    }
+
+    if (destinationPersistence == DestinationPersistence.store) {
+      final existingOrCurrentContinue = continuePath ?? state.uri.toString();
+      return namedLocation(
+        name,
+        pathParameters: pathParameters,
+        queryParameters: {"continue": existingOrCurrentContinue},
+      );
+    }
+
     return namedLocation(name, pathParameters: state.pathParameters, queryParameters: state.uri.queryParametersAll);
   }
 
   bool isAtLocation(GoRouterState state, GuardAwareGoRoute item) {
-    // This check is because of [namedLocation] is asserting if there is
-    // any extra pathParameters which is not required by the matched route.
-    // ignore: invalid_use_of_internal_member
-    if (listEquals(item.pathParameters, state.pathParameters.keys.toList())) {
-      final _location = namedLocation(
-        item.name!,
-        pathParameters: state.pathParameters,
-        queryParameters: state.uri.queryParametersAll,
-      );
-
-      return _location.sanitized == state.uri.toString().sanitized;
-    }
-
-    return false;
+    return (state.topRoute?.name ?? state.name) == item.name;
   }
 
   String? namedLocationCaptureContinue(String name, GoRouterState state) {
@@ -424,4 +459,8 @@ extension GoRouterStateX on GoRouterState {
     }
     return result;
   }
+}
+
+extension UriX on Uri {
+  Map<String, List<String>> get queryParametersAllWithoutContinue => {...queryParametersAll}..remove('continue');
 }
