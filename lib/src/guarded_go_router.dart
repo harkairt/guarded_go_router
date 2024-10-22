@@ -177,13 +177,7 @@ class GuardedGoRouter {
 
       final resolvedContinuePath = state.maybeResolveContinuePath();
       if (resolvedContinuePath != null) {
-        if (goRouter.namedLocation(firstFollowUpRouteName) == resolvedContinuePath) {
-          return goRouter.namedLocation(
-            firstFollowUpRouteName,
-            queryParameters: {...state.uri.queryParametersAll}..remove("continue"),
-            pathParameters: state.pathParameters,
-          );
-        }
+        return resolvedContinuePath;
       }
 
       return goRouter.namedLocationFrom(
@@ -253,12 +247,12 @@ class GuardedGoRouter {
       );
     }
 
-    final it = goRouter.namedLocationFrom(
+    final currentPath = goRouter.namedLocationFrom(
       state: state,
       name: state.requireName,
       destinationPersistence: DestinationPersistence.clear,
     );
-    final isAtRedirectOfLeaf = state.resolvedFullPath == it;
+    final isAtRedirectOfLeaf = state.resolvedFullPath == currentPath;
     if (isAtRedirectOfLeaf) {
       return state.maybeResolveContinuePath();
     }

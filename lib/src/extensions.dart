@@ -317,7 +317,6 @@ extension GoRouterX on GoRouter {
     required GoRouterState state,
     required String name,
     DestinationPersistence destinationPersistence = DestinationPersistence.store,
-    String? continuePath,
   }) {
     final continuePath = state.maybeResolveContinuePath();
 
