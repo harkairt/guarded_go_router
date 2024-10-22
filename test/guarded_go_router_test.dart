@@ -581,6 +581,9 @@ void main() {
 
           reset(guard3);
           activateGuard(guard: guard3);
+
+          reset(guard4);
+          activateGuard(guard: guard4);
         });
 
         group('then go to shield route of first blocking guard', () {
@@ -589,7 +592,7 @@ void main() {
               (WidgetTester tester) async {
             final router = await pumpRouter(
               tester,
-              guards: [guard1, guard2],
+              guards: [guard1, guard2, guard3],
               routes: [
                 _goRoute("shield1", shieldOf: [Guard1]),
                 _goRoute("shield2", shieldOf: [Guard2]),
@@ -629,7 +632,7 @@ void main() {
               (WidgetTester tester) async {
             final router = await pumpRouter(
               tester,
-              guards: [guard1, guard2],
+              guards: [guard1, guard2, guard3],
               routes: [
                 _goRoute("shield1", shieldOf: [Guard1]),
                 _goRoute("shield2", shieldOf: [Guard2]),
@@ -670,7 +673,7 @@ void main() {
               (WidgetTester tester) async {
             final router = await pumpRouter(
               tester,
-              guards: [guard1, guard2],
+              guards: [guard1, guard2, guard3],
               routes: [
                 _goRoute("shield1", shieldOf: [Guard1]),
                 _goRoute("shield2", shieldOf: [Guard2]),
@@ -714,7 +717,7 @@ void main() {
               (WidgetTester tester) async {
             final router = await pumpRouter(
               tester,
-              guards: [guard1, guard2],
+              guards: [guard1, guard2, guard3],
               routes: [
                 _goRoute("shield1", shieldOf: [Guard1]),
                 _goRoute("shield2", shieldOf: [Guard2]),
@@ -758,7 +761,7 @@ void main() {
               (WidgetTester tester) async {
             final router = await pumpRouter(
               tester,
-              guards: [guard1, guard2],
+              guards: [guard1, guard2, guard3],
               routes: [
                 _goRoute("shield1", shieldOf: [Guard1]),
                 _goRoute("shield2", shieldOf: [Guard2]),
@@ -1103,6 +1106,46 @@ void main() {
             await tester.pumpAndSettle();
             expect(router.location.sanitized, "/book/42/page/123");
           });
+          testWidgets("should", (
+            WidgetTester tester,
+          ) async {
+            reset(guard2);
+            deactivateGuard(guard: guard2);
+            reset(guard3);
+            deactivateGuard(guard: guard3);
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3, guard4],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield4", shieldOf: [Guard4]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _goRoute(
+                        "home",
+                        shieldOf: [Guard3],
+                        routes: [
+                          _guardShell<Guard4>([
+                            _goRoute(
+                              "inner",
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/home?continue=/home/inner");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield4?continue=/home/inner");
+          });
 
           group('DestinationPersistence', () {
             group('store', () {
@@ -1110,7 +1153,7 @@ void main() {
                   (WidgetTester tester) async {
                 final router = await pumpRouter(
                   tester,
-                  guards: [guard1, guard2],
+                  guards: [guard1, guard2, guard3],
                   routes: [
                     _goRoute("shield1", shieldOf: [Guard1]),
                     _goRoute("shield2", shieldOf: [Guard2]),
@@ -1151,7 +1194,7 @@ void main() {
               testWidgets("with storing current location if there is no continue param", (WidgetTester tester) async {
                 final router = await pumpRouter(
                   tester,
-                  guards: [guard1, guard2],
+                  guards: [guard1, guard2, guard3],
                   routes: [
                     _goRoute("shield1", shieldOf: [Guard1]),
                     _goRoute("shield2", shieldOf: [Guard2]),
@@ -1196,7 +1239,7 @@ void main() {
                   (WidgetTester tester) async {
                 final router = await pumpRouter(
                   tester,
-                  guards: [guard1, guard2],
+                  guards: [guard1, guard2, guard3],
                   routes: [
                     _goRoute("shield1", shieldOf: [Guard1]),
                     _goRoute("shield2", shieldOf: [Guard2]),
@@ -1364,7 +1407,7 @@ void main() {
                   (WidgetTester tester) async {
                 final router = await pumpRouter(
                   tester,
-                  guards: [guard1, guard2],
+                  guards: [guard1, guard2, guard3],
                   routes: [
                     _goRoute("shield1", shieldOf: [Guard1]),
                     _goRoute("shield2", shieldOf: [Guard2]),

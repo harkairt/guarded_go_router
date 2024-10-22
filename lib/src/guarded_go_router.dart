@@ -68,7 +68,7 @@ class GuardedGoRouter {
     required List<GoGuard> guards,
     required List<RouteBase> routes,
     required this.buildRouter,
-    this.debugLog = true,
+    this.debugLog = false,
     this.pageWrapper = noOpBuilder,
     this.routerWrapper = noOpBuilder,
   }) : _guards = guards {
@@ -290,7 +290,8 @@ class GuardedGoRouter {
 
     final guardShellRoutes = treePath.whereType<GuardShell>();
     final guardTypes = guardShellRoutes.map((r) => r.guardType).toList();
-    final guards = _guards.where((g) => guardTypes.contains(g.runtimeType)).toList();
+    final guards = guardTypes.map((type) => _guards.firstWhere((g) => g.runtimeType == type)).toList();
+
     return guards.map(
       (guard) {
         final shell = guardShellRoutes.firstWhere((element) => element.guardType == guard.runtimeType);
