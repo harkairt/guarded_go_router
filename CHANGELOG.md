@@ -1,3 +1,8 @@
+## 0.0.6
+
+- feat: support path parameters
+- chore: bump go_router to ^14.0.0
+
 ## 0.0.5
 
 - feat: `DestinationPersistence`
