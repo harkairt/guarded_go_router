@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,23 @@ import 'package:guarded_go_router/src/exceptions/multiple_follow_up_route_except
 import 'package:guarded_go_router/src/exceptions/multiple_shield_route_exception.dart';
 import 'package:guarded_go_router/src/exceptions/shield_route_missing_exception.dart';
 import 'package:mocktail/mocktail.dart';
+
+/// A routing config that is never going to change.
+class _ConstantRoutingConfig extends ValueListenable<RoutingConfig> {
+  const _ConstantRoutingConfig(this.value);
+  @override
+  void addListener(VoidCallback listener) {
+    // Intentionally empty because listener will never be called.
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    // Intentionally empty because listener will never be called.
+  }
+
+  @override
+  final RoutingConfig value;
+}
 
 class AuthGuard extends Mock implements GoGuard {}
 
@@ -80,14 +98,14 @@ void main() {
   }
 
   void activateGuard({required GoGuard guard}) {
-    when(() => guard.passes()).thenReturn(false);
-    when(() => guard.blocks()).thenReturn(true);
+    when(() => guard.passes(any())).thenReturn(false);
+    when(() => guard.blocks(any())).thenReturn(true);
     refreshListenable.notifyListeners();
   }
 
   void deactivateGuard({required GoGuard guard}) {
-    when(() => guard.passes()).thenReturn(true);
-    when(() => guard.blocks()).thenReturn(false);
+    when(() => guard.passes(any())).thenReturn(true);
+    when(() => guard.blocks(any())).thenReturn(false);
     refreshListenable.notifyListeners();
   }
 
@@ -148,6 +166,20 @@ void main() {
     authGuard = AuthGuard();
     pinGuard = PinGuard();
     onboardGuard = OnboardGuard();
+    registerFallbackValue(
+      GoRouterState(
+        RouteConfiguration(
+          const _ConstantRoutingConfig(RoutingConfig(routes: [])),
+          // ValueListenable<RoutingConfig>(),
+          navigatorKey: GlobalKey<NavigatorState>(),
+        ),
+        uri: Uri.parse('/'),
+        matchedLocation: '/',
+        fullPath: '/',
+        pathParameters: const {},
+        pageKey: const ValueKey('test'),
+      ),
+    );
   });
   setUp(() {
     reset(authGuard);

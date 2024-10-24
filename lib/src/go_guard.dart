@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 typedef Reader = T Function<T>(ProviderListenable<T> provider);
@@ -7,6 +8,6 @@ abstract class GoGuard {
 
   const GoGuard(this.read);
 
-  bool passes();
-  bool blocks() => !passes();
+  bool passes(GoRouterState state);
+  bool blocks(GoRouterState state) => !passes(state);
 }

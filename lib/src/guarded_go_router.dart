@@ -164,7 +164,7 @@ class GuardedGoRouter {
     final thisName = thisRoute.name ?? state.name ?? 'missing name';
     final discardingGuards = _getGuardsThatAreDiscardingThisRoute(thisName);
 
-    if (discardingGuards.isNotEmpty && discardingGuards.every((g) => g._logPasses(debugLog))) {
+    if (discardingGuards.isNotEmpty && discardingGuards.every((g) => g._logPasses(debugLog, state))) {
       final firstFollowUpRouteName = _followingRouteNames[discardingGuards.first];
 
       if (firstFollowUpRouteName == null) {
@@ -192,9 +192,9 @@ class GuardedGoRouter {
     final guardsShieldingOnThisRoute = _guards.where((g) => thisRoute.shieldOf.contains(g.runtimeType));
     if (guardsShieldingOnThisRoute.isNotEmpty) {
       final pre = enclosingGuards.takeWhile((value) => !guardsShieldingOnThisRoute.contains(value.guard));
-      final firstBlockingEnclosingGuardBeforeShield = pre.firstWhereOrNull((c) => c.guard._logBlocks(debugLog));
+      final firstBlockingEnclosingGuardBeforeShield = pre.firstWhereOrNull((c) => c.guard._logBlocks(debugLog, state));
       if (firstBlockingEnclosingGuardBeforeShield == null) {
-        if (guardsShieldingOnThisRoute.any((guard) => guard._logBlocks(debugLog))) {
+        if (guardsShieldingOnThisRoute.any((guard) => guard._logBlocks(debugLog, state))) {
           final continuePath = state.maybeResolveContinuePath();
           if (continuePath == null) {
             return null;
@@ -216,7 +216,7 @@ class GuardedGoRouter {
       }
     }
 
-    final firstBlockingGuard = enclosingGuards.firstWhereOrNull((c) => c.guard._logBlocks(debugLog));
+    final firstBlockingGuard = enclosingGuards.firstWhereOrNull((c) => c.guard._logBlocks(debugLog, state));
     if (firstBlockingGuard != null) {
       final blockingShieldName = _getShieldRouteName(firstBlockingGuard.guard);
 
@@ -418,12 +418,12 @@ class GuardedGoRouter {
 }
 
 extension GoGuardX on GoGuard {
-  bool _logPasses(bool debugLog) {
+  bool _logPasses(bool debugLog, GoRouterState state) {
     if (!debugLog) {
-      return passes();
+      return passes(state);
     }
 
-    if (passes()) {
+    if (passes(state)) {
       timedDebugPrint('🟢 $runtimeType');
       return true;
     } else {
@@ -432,12 +432,12 @@ extension GoGuardX on GoGuard {
     }
   }
 
-  bool _logBlocks(bool debugLog) {
+  bool _logBlocks(bool debugLog, GoRouterState state) {
     if (!debugLog) {
-      return blocks();
+      return blocks(state);
     }
 
-    if (blocks()) {
+    if (blocks(state)) {
       timedDebugPrint('🔴 $runtimeType');
       return true;
     } else {
