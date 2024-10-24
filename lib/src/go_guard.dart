@@ -8,6 +8,6 @@ abstract class GoGuard {
 
   const GoGuard(this.read);
 
-  bool passes(GoRouterState state);
-  bool blocks(GoRouterState state) => !passes(state);
+  Future<bool> passes(GoRouterState state);
+  Future<bool> blocks(GoRouterState state) async => !(await passes(state));
 }

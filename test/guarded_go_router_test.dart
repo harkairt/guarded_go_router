@@ -82,7 +82,7 @@ void main() {
       routeInformationProvider: router.routeInformationProvider,
     );
     await tester.pumpWidget(app);
-    await tester.pumpAndSettle();
+    await tester.pumpAndSettle(const Duration(seconds: 1));
 
     return guardedRouter;
   }
@@ -98,14 +98,26 @@ void main() {
   }
 
   void activateGuard({required GoGuard guard}) {
-    when(() => guard.passes(any())).thenReturn(false);
-    when(() => guard.blocks(any())).thenReturn(true);
+    when(() => guard.passes(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      return false;
+    });
+    when(() => guard.blocks(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      return true;
+    });
     refreshListenable.notifyListeners();
   }
 
   void deactivateGuard({required GoGuard guard}) {
-    when(() => guard.passes(any())).thenReturn(true);
-    when(() => guard.blocks(any())).thenReturn(false);
+    when(() => guard.passes(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      return true;
+    });
+    when(() => guard.blocks(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      return false;
+    });
     refreshListenable.notifyListeners();
   }
 
@@ -428,7 +440,7 @@ void main() {
 
           router.goNamed("3");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/1/2/3");
         });
       });
@@ -473,7 +485,7 @@ void main() {
 
             router.goNamed("3");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/followUp1");
           });
         });
@@ -535,7 +547,7 @@ void main() {
 
           router.goNamed("3");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/1/2/3");
         });
       });
@@ -583,7 +595,7 @@ void main() {
 
             router.goNamed("3");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/followUp1");
           });
         });
@@ -656,8 +668,8 @@ void main() {
 
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
-            await tester.pumpAndSettle();
-            expect(router.location.sanitized, "/shield2?continue=/route");
+            await tester.pumpAndSettle(const Duration(milliseconds: 1000));
+            expectLater(router.location.sanitized, "/shield2?continue=/route");
           });
 
           testWidgets("with appending continue param if there isnt any and destination is not a shield path",
@@ -696,7 +708,7 @@ void main() {
 
             router.goNamed("3");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
           });
 
@@ -740,7 +752,7 @@ void main() {
 
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/route");
           });
 
@@ -784,7 +796,7 @@ void main() {
 
             router.goNamed("3");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
           });
 
@@ -828,7 +840,7 @@ void main() {
 
             router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/route");
           });
 
@@ -875,7 +887,7 @@ void main() {
 
             router.goNamed("3");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
           });
 
@@ -904,7 +916,7 @@ void main() {
               ],
             );
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/consultationPage");
           });
 
@@ -938,7 +950,7 @@ void main() {
               ],
             );
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/consultation/page");
           });
 
@@ -972,7 +984,7 @@ void main() {
               ],
             );
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/consultation/page");
           });
 
@@ -1005,10 +1017,10 @@ void main() {
               ],
             );
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/consultation/page");
             activateGuard(guard: guard1);
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield1?continue=/consultation/page");
           });
 
@@ -1053,7 +1065,7 @@ void main() {
 
             router.goNamed("2");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/root/1/2");
           });
           testWidgets("should work with path parameters", (
@@ -1087,7 +1099,7 @@ void main() {
 
             router.go("/book/page/123");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield2?continue=/book/page/123");
           });
           testWidgets("should work with path multiple parameters", (
@@ -1127,15 +1139,15 @@ void main() {
 
             router.go("/book/42/page/123");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield3?continue=/book/42/page/123");
             deactivateGuard(guard: guard3);
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             deactivateGuard(guard: guard3);
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/book/42/purchase?continue=/book/42/page/123");
             deactivateGuard(guard: guard2);
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/book/42/page/123");
           });
           testWidgets("should", (
@@ -1175,7 +1187,7 @@ void main() {
 
             router.go("/home?continue=/home/inner");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/shield4?continue=/home/inner");
           });
 
@@ -1220,7 +1232,7 @@ void main() {
 
                 router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2?continue=/route");
               });
               testWidgets("with storing current location if there is no continue param", (WidgetTester tester) async {
@@ -1261,7 +1273,7 @@ void main() {
 
                 router.goNamed("3");
 
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2?continue=/root/1/2/3");
               });
             });
@@ -1305,7 +1317,7 @@ void main() {
 
                 router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2?continue=/route");
               });
               testWidgets("does not add continue query param", (
@@ -1336,7 +1348,7 @@ void main() {
 
                 router.goNamed('consultation');
 
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2");
               });
 
@@ -1368,7 +1380,7 @@ void main() {
 
                 router.go('/shield2?continue=/shield2');
 
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2");
               });
             });
@@ -1400,7 +1412,7 @@ void main() {
 
                 router.go('/consultation?continue=/anotherInnerPage');
 
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2");
               });
               testWidgets("removes continue query param added by previous guard", (
@@ -1428,10 +1440,10 @@ void main() {
                 );
 
                 router.go('/consultation?continue=/anotherInnerPage');
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2?continue=/anotherInnerPage");
                 deactivateGuard(guard: guard2);
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield3");
               });
 
@@ -1473,7 +1485,7 @@ void main() {
 
                 router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2");
               });
               testWidgets("does not add continue query param", (
@@ -1504,7 +1516,7 @@ void main() {
 
                 router.goNamed('consultation');
 
-                await tester.pumpAndSettle();
+                await tester.pumpAndSettle(const Duration(seconds: 1));
                 expect(router.location.sanitized, "/shield2");
               });
             });
@@ -1561,6 +1573,7 @@ void main() {
 
           await tester.pumpAndSettle();
           expect(router.location.sanitized, "/root/1/2/3");
+          await tester.pumpAndSettle(const Duration(seconds: 10));
         });
 
         testWidgets("then resolve destination route's redirect", (WidgetTester tester) async {
@@ -1598,8 +1611,9 @@ void main() {
 
           router.goNamed("3");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 3));
           expect(router.location.sanitized, "/root/1");
+          await tester.pumpAndSettle(const Duration(seconds: 10));
         });
 
         testWidgets('then resolve continue path if exists', (WidgetTester tester) async {
@@ -1638,8 +1652,9 @@ void main() {
 
           router.goNamed("3", queryParameters: <String, dynamic>{"continue": "/route"});
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 3));
           expect(router.location.sanitized, "/route");
+          await tester.pumpAndSettle(const Duration(seconds: 10));
         });
       });
     });
@@ -1685,7 +1700,7 @@ void main() {
 
           router.goNamed("multi-shield", queryParameters: <String, dynamic>{"continue": "/route"});
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/multi-shield?continue=/route");
         });
       });
@@ -1722,7 +1737,7 @@ void main() {
 
             router.goNamed("multi-shield", queryParameters: <String, dynamic>{"continue": "/route"});
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/route");
           });
           testWidgets('even when a guard has followUp', (WidgetTester tester) async {
@@ -1748,7 +1763,7 @@ void main() {
 
             router.goNamed("multi-shield", queryParameters: <String, dynamic>{"continue": "/route"});
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/route");
           });
         });
@@ -1775,7 +1790,7 @@ void main() {
 
             router.goNamed("multi-shield");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/followUp1");
           });
           testWidgets('when no guard has followUp then stay', (WidgetTester tester) async {
@@ -1799,7 +1814,7 @@ void main() {
 
             router.goNamed("multi-shield");
 
-            await tester.pumpAndSettle();
+            await tester.pumpAndSettle(const Duration(seconds: 1));
             expect(router.location.sanitized, "/root/multi-shield");
           });
         });
@@ -1846,7 +1861,7 @@ void main() {
 
           router.goNamed("2");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/2");
         });
 
@@ -1876,7 +1891,7 @@ void main() {
 
           router.goNamed("2");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/1/2");
         });
 
@@ -1901,7 +1916,7 @@ void main() {
 
           router.goNamed("profile");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/home/profile");
         });
 
@@ -1930,7 +1945,7 @@ void main() {
 
           router.goNamed("2");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/1/2");
         });
       });
@@ -1972,7 +1987,7 @@ void main() {
 
           deactivateGuard(guard: guard1);
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/1");
         });
         testWidgets('then route resolves continue path', (WidgetTester tester) async {
@@ -1993,7 +2008,7 @@ void main() {
 
           deactivateGuard(guard: guard1);
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/2");
         });
       });
@@ -2017,7 +2032,7 @@ void main() {
 
           deactivateGuard(guard: guard1);
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/2");
         });
 
@@ -2040,7 +2055,7 @@ void main() {
 
           deactivateGuard(guard: guard1);
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/3");
         });
 
@@ -2068,7 +2083,7 @@ void main() {
 
           router.goNamed("2");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/1/2");
         });
 
@@ -2096,7 +2111,7 @@ void main() {
 
           router.goNamed("2");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/root/1/2");
         });
       });
@@ -2115,7 +2130,7 @@ void main() {
             routes: routeTree,
           );
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/login?continue=/app/dash");
         });
 
@@ -2130,7 +2145,7 @@ void main() {
             routes: routeTree,
           );
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
         });
 
@@ -2145,7 +2160,7 @@ void main() {
             initialLocation: "/app/dash",
             routes: routeTree,
           );
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/onboard?continue=/app/dash");
         });
 
@@ -2163,7 +2178,7 @@ void main() {
             routes: routeTree,
           );
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/app/dash");
         });
       });
@@ -2176,7 +2191,7 @@ void main() {
             routes: routeTree,
           );
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/login?continue=/app/dash");
         });
 
@@ -2193,7 +2208,7 @@ void main() {
             routes: routeTree,
           );
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/app/dash");
         });
       });
@@ -2208,7 +2223,7 @@ void main() {
 
           router.goNamed("me");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/login?continue=/app/me");
         });
 
@@ -2224,7 +2239,7 @@ void main() {
 
           router.goNamed("me");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/me");
         });
 
@@ -2241,7 +2256,7 @@ void main() {
 
           router.goNamed("me");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/onboard?continue=/app/me");
         });
 
@@ -2259,7 +2274,7 @@ void main() {
 
           router.goNamed("me");
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/app/me");
         });
 
@@ -2273,19 +2288,19 @@ void main() {
             routes: routeTree,
           );
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/login?continue=/app/dash");
           router.goNamed("me");
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/login?continue=/app/me");
           deactivateGuard(guard: authGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/me");
           deactivateGuard(guard: pinGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/onboard?continue=/app/me");
           deactivateGuard(guard: onboardGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/app/me");
         });
 
@@ -2297,19 +2312,19 @@ void main() {
             routes: routeTree,
           );
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/login?continue=/app/dash");
           router.go("/app/me?foo=bar");
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/login?continue=/app/me?foo=bar");
           deactivateGuard(guard: authGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
           deactivateGuard(guard: pinGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/onboard?continue=/app/me?foo=bar");
           deactivateGuard(guard: onboardGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/app/me?foo=bar");
         });
       });
@@ -2328,7 +2343,7 @@ void main() {
 
           activateGuard(guard: pinGuard);
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
         });
 
@@ -2345,11 +2360,13 @@ void main() {
             routes: routeTree,
           );
 
-          router.neglectContinue(() {
+          await router.neglectContinue(() async {
+            await tester.pump(const Duration(seconds: 10));
             activateGuard(guard: pinGuard);
+            await tester.pump(const Duration(seconds: 10));
           });
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.goRouter.location.sanitized, "/auth/pin?foo=bar");
         });
 
@@ -2369,9 +2386,10 @@ void main() {
           await router.neglectContinue(() async {
             await tester.pump(const Duration(seconds: 10));
             activateGuard(guard: pinGuard);
+            await tester.pump(const Duration(seconds: 10));
           });
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.goRouter.location.sanitized, "/auth/pin?foo=bar");
         });
 
@@ -2389,10 +2407,10 @@ void main() {
           );
 
           activateGuard(guard: pinGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
           activateGuard(guard: authGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/login?continue=/app/me?foo=bar");
         });
 
@@ -2409,10 +2427,10 @@ void main() {
           );
 
           activateGuard(guard: pinGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
           activateGuard(guard: onboardGuard);
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/me?foo=bar");
         });
       });
@@ -2430,7 +2448,7 @@ void main() {
 
           deactivateGuard(guard: authGuard);
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
         });
 
@@ -2446,7 +2464,7 @@ void main() {
 
           deactivateGuard(guard: authGuard);
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
         });
 
@@ -2464,7 +2482,7 @@ void main() {
 
           deactivateGuard(guard: authGuard);
 
-          await tester.pumpAndSettle();
+          await tester.pumpAndSettle(const Duration(seconds: 1));
           expect(router.location.sanitized, "/auth/pin?continue=/app/me");
         });
 
@@ -2481,7 +2499,7 @@ void main() {
 
         //   deactivateGuard(guard: pinGuard);
 
-        //   await tester.pumpAndSettle();
+        //   await tester.pumpAndSettle(const Duration(seconds: 1));
         //   expect(router.location.sanitized, "/auth/pin");
         // });
         // testWidgets(
@@ -2498,9 +2516,9 @@ void main() {
         //   );
 
         //   deactivateGuard(guard: pinGuard);
-        //   await tester.pumpAndSettle();
+        //   await tester.pumpAndSettle(const Duration(seconds: 1));
 
-        //   await tester.pumpAndSettle();
+        //   await tester.pumpAndSettle(const Duration(seconds: 1));
         //   expect(router.location.sanitized, "/licenses");
         // });
       });
@@ -2518,7 +2536,7 @@ void main() {
 
       //     deactivateGuard(guard: onboardGuard);
 
-      //     await tester.pumpAndSettle();
+      //     await tester.pumpAndSettle(const Duration(seconds: 1));
       //     expect(router.location.sanitized, "/onboard/passphrase");
       //   });
       // });
@@ -2578,7 +2596,7 @@ void main() {
 
               router.goNamed("shield");
 
-              await tester.pumpAndSettle();
+              await tester.pumpAndSettle(const Duration(seconds: 1));
               expect(router.location.sanitized, "/shield");
             });
 
@@ -2595,7 +2613,7 @@ void main() {
               deactivateGuard(guard: guard1);
               router.goNamed("shield");
 
-              await tester.pumpAndSettle();
+              await tester.pumpAndSettle(const Duration(seconds: 1));
               expect(router.location.sanitized, "/shield");
             });
 
@@ -2612,7 +2630,7 @@ void main() {
               deactivateGuard(guard: guard2);
               router.goNamed("shield");
 
-              await tester.pumpAndSettle();
+              await tester.pumpAndSettle(const Duration(seconds: 1));
               expect(router.location.sanitized, "/shield");
             });
 
@@ -2630,7 +2648,7 @@ void main() {
               deactivateGuard(guard: guard2);
               router.goNamed("shield");
 
-              await tester.pumpAndSettle();
+              await tester.pumpAndSettle(const Duration(seconds: 1));
               expect(router.location.sanitized, "/guarded-content");
             });
           });
@@ -2650,7 +2668,7 @@ void main() {
 
         router.goNamed("pin");
 
-        await tester.pumpAndSettle();
+        await tester.pumpAndSettle(const Duration(seconds: 1));
         expect(router.location.sanitized, "/auth/login?continue=/auth/pin");
       });
 
@@ -2662,15 +2680,15 @@ void main() {
           guards: [authGuard, pinGuard, onboardGuard],
           routes: routeTree,
         );
-        await tester.pumpAndSettle();
+        await tester.pumpAndSettle(const Duration(seconds: 1));
         expect(router.location.sanitized, "/auth/login?continue=/app/dash");
         router.goNamed("hello");
-        await tester.pumpAndSettle();
+        await tester.pumpAndSettle(const Duration(seconds: 1));
         expect(router.location.sanitized, "/auth/hello");
 
         deactivateGuard(guard: authGuard);
 
-        await tester.pumpAndSettle();
+        await tester.pumpAndSettle(const Duration(seconds: 1));
         expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
       });
 
@@ -2682,15 +2700,15 @@ void main() {
           guards: [authGuard, pinGuard, onboardGuard],
           routes: routeTree,
         );
-        await tester.pumpAndSettle();
+        await tester.pumpAndSettle(const Duration(seconds: 1));
         expect(router.location.sanitized, "/auth/login?continue=/app/dash");
         router.go("/auth/hello/sub1");
-        await tester.pumpAndSettle();
+        await tester.pumpAndSettle(const Duration(seconds: 1));
         expect(router.location.sanitized, "/auth/hello/sub1");
 
         deactivateGuard(guard: authGuard);
 
-        await tester.pumpAndSettle();
+        await tester.pumpAndSettle(const Duration(seconds: 1));
         expect(router.location.sanitized, "/auth/pin?continue=/app/dash");
       });
 

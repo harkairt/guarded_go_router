@@ -31,11 +31,16 @@ extension GoRouteX on GoRoute {
   ) {
     final existingRedirect = this.redirect;
     if (existingRedirect == null) {
-      return copyWith(redirect: (context, state) => redirect(context, state));
+      return copyWith(
+        redirect: (context, state) async {
+          final result = await redirect(context, state);
+          return result;
+        },
+      );
     } else {
       return copyWith(
         redirect: (context, state) async {
-          final appendedRedirectResult = redirect(context, state);
+          final appendedRedirectResult = await redirect(context, state);
           if (appendedRedirectResult != null) {
             return appendedRedirectResult;
           }
@@ -463,4 +468,33 @@ extension GoRouterStateX on GoRouterState {
 
 extension UriX on Uri {
   Map<String, List<String>> get queryParametersAllWithoutContinue => {...queryParametersAll}..remove('continue');
+}
+
+extension AsyncIterableExtension<T> on Iterable<T> {
+  Future<T?> asyncFirstWhereOrNull(Future<bool> Function(T it) test) async {
+    for (final element in this) {
+      if (await test(element)) {
+        return element;
+      }
+    }
+    return null;
+  }
+
+  Future<bool> asyncAny(Future<bool> Function(T element) test) async {
+    for (final element in this) {
+      if (await test(element)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<bool> asyncEvery(Future<bool> Function(T element) test) async {
+    for (final element in this) {
+      if (!(await test(element))) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
