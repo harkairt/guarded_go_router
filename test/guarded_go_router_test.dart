@@ -457,6 +457,32 @@ void main() {
         guard2 = Guard2();
       });
 
+      testWidgets("allow having a shell route as a direct child of it", (WidgetTester tester) async {
+        reset(guard1);
+        deactivateGuard(guard: guard1);
+
+        final router = await pumpRouter(
+          tester,
+          guards: [guard1],
+          routes: [
+            _goRoute("shield1", shieldOf: [Guard1]),
+            _discardShell<Guard1>([
+              ShellRoute(
+                routes: [
+                  _goRoute("3"),
+                ],
+              ),
+            ]),
+            _goRoute("followUp1", followUp: [Guard1]),
+          ],
+        );
+
+        router.goNamed("3");
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/followUp1");
+      });
+
       group('any() blocks', () {
         setUp(() {
           reset(guard1);
