@@ -404,7 +404,7 @@ class GuardedGoRouter {
           subordinateRoutes
               .map((e) {
                 if (e is! GoRoute) {
-                  throw "This should be a GoRoute";
+                  return null;
                 }
                 return e.name;
               })
