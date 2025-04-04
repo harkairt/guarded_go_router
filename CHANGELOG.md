@@ -1,3 +1,7 @@
+## 0.0.8
+
+- fix: remove an unecessary exception throwing when DiscardShell had a non-GoRoute as direct child
+
 ## 0.0.7
 
 - fix: resolve guards in treePath in order of appearance instead of definition
