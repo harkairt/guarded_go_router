@@ -1,3 +1,7 @@
+## 0.0.9
+
+- fix: an assertion error when redirecting to a route without current pathParam
+
 ## 0.0.8
 
 - fix: remove an unecessary exception throwing when DiscardShell had a non-GoRoute as direct child
