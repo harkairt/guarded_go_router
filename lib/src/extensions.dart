@@ -361,7 +361,7 @@ extension GoRouterX on GoRouter {
       );
     }
 
-    return namedLocation(name, pathParameters: state.pathParameters, queryParameters: state.uri.queryParametersAll);
+    return namedLocation(name, pathParameters: pathParameters, queryParameters: state.uri.queryParametersAll);
   }
 
   bool isAtLocation(GoRouterState state, GuardAwareGoRoute item) {
