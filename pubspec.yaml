@@ -4,16 +4,16 @@ repository: https://github.com/harkairt/guarded_go_router
 version: 0.0.9
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
-  flutter: ">=3.19.2"
+  sdk: ">=3.6.2 <4.0.0"
+  flutter: ">=3.29.2"
 
 dependencies:
   collection: ^1.17.2
   flutter:
     sdk: flutter
-  flutter_hooks: ^0.20.4
+  flutter_hooks: ^0.21.2
   go_router: ^14.0.0
-  hooks_riverpod: ^2.1.3
+  hooks_riverpod: ^2.6.1
 
 dev_dependencies:
   flutter_test:
