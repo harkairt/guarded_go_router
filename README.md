@@ -17,8 +17,22 @@ It accepts not only the standard routes (`GoRoute` and `ShellRoute`) but also so
 
 ## GoNotifier
 
-A helper class to supply to the `GoRouter`'s `refreshListenable`. 
-Providers (only always alive ones) can be given to it, whom notifications are triggering the reevaluation of the current route.
+A helper class to supply to the `GoRouter`'s `refreshListenable`.
+Providers can be given to it, whose notifications trigger the reevaluation of the current route.
+
+**Note:** Compatible with Riverpod 3.0. Accepts any `ProviderListenable` type.
+
+```dart
+final goNotifier = GoNotifier(
+  ref,
+  dependencies: [
+    authProvider,
+    userProvider,
+    settingsProvider,
+    // Any provider type is supported
+  ],
+);
+```
 
 ## Concepts
 
