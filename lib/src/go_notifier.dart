@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class GoNotifier extends ChangeNotifier {
   final Ref _ref;
-  final List<AlwaysAliveProviderListenable<Object>> dependencies;
+  final List<ProviderListenable<Object?>> dependencies;
   final bool debugLog;
 
   GoNotifier(
@@ -13,9 +13,9 @@ class GoNotifier extends ChangeNotifier {
     this.debugLog = false,
   }) {
     for (final provider in dependencies) {
-      _ref.listen<dynamic>(
+      _ref.listen<Object?>(
         provider,
-        (dynamic prev, dynamic next) {
+        (Object? prev, Object? next) {
           if (debugLog) {
             timedDebugPrint('⚪️ [$prev => $next] - ${provider.runtimeType}');
           }
