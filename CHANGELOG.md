@@ -1,3 +1,7 @@
+## 0.0.11
+
+- feat: support `pathAliases`, "synthetic" routes which gets redirected to canonical path
+
 ## 0.0.10
 
 - Require 
