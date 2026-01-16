@@ -74,6 +74,7 @@ class GuardedGoRouter {
   }) : _guards = guards {
     _routes = routes.copyWithTopRoutesHavingForwardSlash;
     _routes = _routes.copyWithAppendedRedirect(debugLog ? _loggingGuardingRedirect : _guardingRedirect);
+    _routes = _routes.withAliasRedirects(parentFullPath: '', isTopLevel: true);
 
     _shieldRouteNames = _getShieldRouteNames(_guards, _routes);
     _followingRouteNames = _getFollowingRouteNames(_guards, _routes);

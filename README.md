@@ -13,6 +13,7 @@ A `GoRouter` proxy. This has a `routes: List<RouteBase>` just like the `GoRouter
 It accepts not only the standard routes (`GoRoute` and `ShellRoute`) but also some custom route types defined by this package:
 - `GuardAwareGoRoute` (extends `GoRoute`)
   - there is a simple `goRoute` function which returns a `GuardAwareGoRoute`, to make it easy to switch from `GoRoute` to `goRoute`
+  - supports `pathAliases: List<String>` which redirect to the route's canonical path
 - `GuardShell<T>` and `DiscardShell<T>` (extends `ShellRoute`)
 
 ## GoNotifier

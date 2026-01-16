@@ -167,6 +167,61 @@ extension RouteBaseListX on List<RouteBase> {
   ) =>
       traverseMap((route) => route.appendRedirect(redirect));
 
+  List<RouteBase> withAliasRedirects({
+    required String parentFullPath,
+    required bool isTopLevel,
+    List<RouteBase>? topLevelAliases,
+  }) {
+    final topLevelAliasCollector = topLevelAliases ?? <RouteBase>[];
+    final result = <RouteBase>[];
+    for (final route in this) {
+      if (route is StatefulShellRoute) {
+        final mappedBranches = route.branches
+            .map(
+              (branch) => branch.copyWith(
+                routes: branch.routes.withAliasRedirects(
+                  parentFullPath: '',
+                  isTopLevel: true,
+                  topLevelAliases: topLevelAliasCollector,
+                ),
+              ),
+            )
+            .toList();
+        result.add(route.copyWith(branches: mappedBranches));
+        continue;
+      }
+
+      final childIsTopLevel = (route is GuardShell || route is DiscardShell) ? isTopLevel : false;
+      final nextParentFullPath = route is GoRoute ? _joinFullPath(parentFullPath, route.path) : parentFullPath;
+      final updatedRoute = route.copyWithRoutes(
+        route.routes.withAliasRedirects(
+          parentFullPath: nextParentFullPath,
+          isTopLevel: childIsTopLevel,
+          topLevelAliases: topLevelAliasCollector,
+        ),
+      );
+      result.add(updatedRoute);
+
+      if (updatedRoute is GuardAwareGoRoute) {
+        final routeFullPath = _joinFullPath(parentFullPath, updatedRoute.path);
+        result.addAll(
+          _aliasRoutesFor(
+            updatedRoute,
+            routeFullPath: routeFullPath,
+            isTopLevel: isTopLevel,
+            topLevelAliases: topLevelAliasCollector,
+          ),
+        );
+      }
+    }
+
+    if (parentFullPath.isEmpty && isTopLevel && topLevelAliasCollector.isNotEmpty) {
+      result.addAll(topLevelAliasCollector);
+    }
+
+    return result;
+  }
+
   List<RouteBase> get copyWithTopRoutesHavingForwardSlash => mapTopLevelRoutes((route) {
         if (route is GuardAwareGoRoute) {
           if (route.path.startsWith("/")) {
@@ -283,6 +338,71 @@ extension RouteBaseListX on List<RouteBase> {
 
     return result;
   }
+}
+
+List<GoRoute> _aliasRoutesFor(
+  GuardAwareGoRoute route, {
+  required String routeFullPath,
+  required bool isTopLevel,
+  required List<RouteBase> topLevelAliases,
+}) {
+  if (route.pathAliases.isEmpty) {
+    return const [];
+  }
+
+  final routeName = route.name;
+  if (routeName == null || routeName.isEmpty) {
+    throw Exception("Route pathAliases require a non-empty name for ${route.path}.");
+  }
+
+  final result = <GoRoute>[];
+  for (final alias in route.pathAliases) {
+    final aliasPath = (isTopLevel && !alias.startsWith("/")) ? "/$alias" : alias;
+    final aliasRoute = GoRoute(
+      path: aliasPath,
+      redirect: (context, state) {
+        var resolvedPath = routeFullPath;
+        for (final entry in state.pathParameters.entries) {
+          resolvedPath = resolvedPath.replaceAll(":${entry.key}", entry.value);
+        }
+        final queryParameters = state.uri.queryParametersAll;
+        if (queryParameters.isEmpty) {
+          return resolvedPath;
+        }
+        return Uri(
+          path: resolvedPath,
+          queryParameters: queryParameters,
+        ).toString();
+      },
+    );
+    if (alias.startsWith("/") && !isTopLevel) {
+      topLevelAliases.add(aliasRoute);
+      continue;
+    }
+    result.add(aliasRoute);
+  }
+  return result;
+}
+
+String _joinFullPath(String parentFullPath, String path) {
+  if (path.startsWith("/")) {
+    return path;
+  }
+
+  if (parentFullPath.isEmpty) {
+    if (path.isEmpty) {
+      return parentFullPath;
+    }
+    return "/$path";
+  }
+
+  if (path.isEmpty) {
+    return parentFullPath;
+  }
+
+  final normalizedParent =
+      parentFullPath.endsWith("/") ? parentFullPath.substring(0, parentFullPath.length - 1) : parentFullPath;
+  return "$normalizedParent/$path";
 }
 
 extension StatefulShellBranchListX on List<StatefulShellBranch> {
