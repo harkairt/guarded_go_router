@@ -1,3 +1,7 @@
+## 0.0.12
+
+- fix: expose pathAliases on RouteId constructor
+
 ## 0.0.11
 
 - feat: support `pathAliases`, "synthetic" routes which gets redirected to canonical path
