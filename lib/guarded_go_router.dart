@@ -1,5 +1,4 @@
-// ignore: unnecessary_library_directive
-library guarded_go_router;
+// Guarded Go Router library exports
 
 export 'src/extensions.dart';
 export 'src/go_guard.dart';

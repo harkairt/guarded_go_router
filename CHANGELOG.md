@@ -1,3 +1,10 @@
+## 0.0.10
+
+- Require 
+### Breaking Changes
+- **BREAKING**: Upgraded to Riverpod 3.0.3
+- **BREAKING**: `GoNotifier.dependencies` now accepts `List<ProviderListenable<Object?>>` instead of `List<AlwaysAliveProviderListenable<Object>>`
+
 ## 0.0.9
 
 - fix: an assertion error when redirecting to a route without current pathParam

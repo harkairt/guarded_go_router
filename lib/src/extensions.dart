@@ -14,6 +14,7 @@ extension GoRouteX on GoRoute {
     FutureOr<String?> Function(BuildContext, GoRouterState)? redirect,
     List<RouteBase>? routes,
     FutureOr<bool> Function(BuildContext, GoRouterState)? onExit,
+    bool? caseSensitive,
   }) =>
       GoRoute(
         name: name,
@@ -24,6 +25,7 @@ extension GoRouteX on GoRoute {
         parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
         routes: routes ?? this.routes,
         onExit: onExit ?? this.onExit,
+        caseSensitive: caseSensitive ?? this.caseSensitive,
       );
 
   GoRoute appendRedirect(
@@ -82,8 +84,10 @@ extension StatefulShellBranchX on StatefulShellBranch {
     GlobalKey<NavigatorState>? navigatorKey,
     List<NavigatorObserver>? observers,
     String? restorationScopeId,
+    bool? preload,
   }) =>
       StatefulShellBranch(
+        preload: preload ?? this.preload,
         routes: routes ?? this.routes,
         initialLocation: initialLocation ?? this.initialLocation,
         navigatorKey: navigatorKey ?? this.navigatorKey,
@@ -104,8 +108,12 @@ extension StatefulShellRouteX on StatefulShellRoute {
     Widget Function(BuildContext, StatefulNavigationShell, List<Widget>)? navigatorContainerBuilder,
     List<StatefulShellBranch>? branches,
     String? restorationScopeId,
+    GoRouterRedirect? redirect,
+    GlobalKey<StatefulNavigationShellState>? key,
   }) =>
       StatefulShellRoute(
+        key: key,
+        redirect: redirect ?? this.redirect,
         parentNavigatorKey: parentNavigatorKey ?? this.parentNavigatorKey,
         builder: builder ?? this.builder,
         pageBuilder: pageBuilder ?? this.pageBuilder,

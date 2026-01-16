@@ -407,7 +407,7 @@ class GuardedGoRouter {
                 }
                 return e.name;
               })
-              .whereNotNull()
+              .nonNulls
               .toList(),
         ),
       );
