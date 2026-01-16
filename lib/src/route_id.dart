@@ -7,15 +7,20 @@ import 'package:guarded_go_router/guarded_go_router.dart';
 class RouteId {
   final String path;
   final String name;
+  final List<String> pathAliases;
 
-  const RouteId({required this.path, required this.name});
-  const RouteId.path(String path) : this(path: path, name: path);
+  const RouteId({
+    required this.name,
+    String? path,
+    this.pathAliases = const [],
+  }) : path = path ?? name;
+
+  const RouteId.path(String path) : this(name: path);
 
   GoRoute call<GuardType extends GoGuard>({
     List<Type> shieldOf = const [],
     List<Type> followUp = const [],
     List<Type> discardedBy = const [],
-    List<String> pathAliases = const [],
     List<RouteBase> routes = const [],
     Widget Function(BuildContext, GoRouterState)? builder,
     Page<dynamic> Function(BuildContext, GoRouterState)? pageBuilder,
