@@ -419,7 +419,7 @@ extension StatefulShellBranchListX on List<StatefulShellBranch> {
 
 extension NullableStringExtensions on String? {
   String? get sanitized =>
-      this?.replaceAll("%2F", "/").replaceAll("%3F", "?").replaceAll("%3D", '=').replaceAll("%252F", "/");
+      this?.replaceAll("%2F", "/").replaceAll("%3F", "?").replaceAll("%3A", ':').replaceAll("%252F", "/");
 
   String? setQueryParam(String key, String value) {
     if (this == null) {
