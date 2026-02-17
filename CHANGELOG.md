@@ -1,3 +1,8 @@
+## 0.0.13
+
+- fix: improve path sanitization
+- feat: support custom log callback
+
 ## 0.0.12
 
 - fix: expose pathAliases on RouteId constructor
