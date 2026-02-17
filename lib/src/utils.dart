@@ -4,6 +4,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
+/// Callback signature for custom logging
+typedef LogCallback = void Function(
+  String message, {
+  Object? error,
+  StackTrace? stackTrace,
+});
+
 typedef TransitionBuilder = Widget Function(
   BuildContext context,
   Animation<double> animation,
@@ -82,19 +89,6 @@ Page<void> Function(BuildContext, GoRouterState) trans(Widget Function(GoRouterS
 
 Page<void> Function(BuildContext, GoRouterState) fullScreen(Widget Function(GoRouterState state) child) =>
     (context, state) => buildFullScreenDialogPage<void>(context: context, state: state, child: child(state));
-
-String _formattedCurrentTime() {
-  final now = DateTime.now();
-  final hours = now.hour.toString().padLeft(2, "0");
-  final minutes = now.minute.toString().padLeft(2, "0");
-  final seconds = now.second.toString().padLeft(2, "0");
-  final milliseconds = now.millisecond.toString().padLeft(3, "0");
-  return "$hours:$minutes:$seconds.$milliseconds";
-}
-
-void timedDebugPrint(String value) {
-  debugPrint("${_formattedCurrentTime()} $value");
-}
 
 class InfiniteLoopRedirectLatch {
   final timesCalled = <DateTime>[];

@@ -7,6 +7,7 @@ class GuardAwareGoRoute extends GoRoute {
   final List<Type> shieldOf;
   final List<Type> followUp;
   final List<Type> discardedBy;
+  final List<String> pathAliases;
   final bool ignoreAsContinueLocation;
 
   GuardAwareGoRoute({
@@ -14,6 +15,7 @@ class GuardAwareGoRoute extends GoRoute {
     this.shieldOf = const [],
     this.followUp = const [],
     this.discardedBy = const [],
+    this.pathAliases = const [],
     this.ignoreAsContinueLocation = false,
     super.name,
     super.builder,
@@ -26,6 +28,7 @@ class GuardAwareGoRoute extends GoRoute {
 
   GuardAwareGoRoute copyWith({
     String? path,
+    List<String>? pathAliases,
     Widget Function(BuildContext, GoRouterState)? builder,
     Page<dynamic> Function(BuildContext, GoRouterState)? pageBuilder,
     GlobalKey<NavigatorState>? parentNavigatorKey,
@@ -39,6 +42,7 @@ class GuardAwareGoRoute extends GoRoute {
         shieldOf: shieldOf,
         discardedBy: discardedBy,
         followUp: followUp,
+        pathAliases: pathAliases ?? this.pathAliases,
         redirect: redirect ?? this.redirect,
         builder: builder ?? this.builder,
         pageBuilder: pageBuilder ?? this.pageBuilder,
@@ -80,6 +84,7 @@ GuardAwareGoRoute goRoute(
   List<Type> shieldOf = const [],
   List<Type> followUp = const [],
   List<Type> discardedBy = const [],
+  List<String> pathAliases = const [],
   List<RouteBase> routes = const [],
   Widget Function(BuildContext, GoRouterState)? builder,
   Page<dynamic> Function(BuildContext, GoRouterState)? pageBuilder,
@@ -94,6 +99,7 @@ GuardAwareGoRoute goRoute(
     discardedBy: discardedBy,
     shieldOf: shieldOf,
     followUp: followUp,
+    pathAliases: pathAliases,
     routes: routes,
     builder: builder,
     pageBuilder: pageBuilder,

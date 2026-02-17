@@ -43,11 +43,9 @@ void main() {
     final guardedRouter = GuardedGoRouter(
       guards: guards,
       routes: routes,
-      debugLog: true,
       buildRouter: (routes, rootRedirect) {
         return GoRouter(
           redirect: rootRedirect,
-          debugLogDiagnostics: true,
           redirectLimit: 20,
           routes: routes,
           initialLocation: initialLocation,
@@ -97,6 +95,7 @@ void main() {
     List<Type> shieldOf = const [],
     List<Type> followUp = const [],
     List<Type> discardedBy = const [],
+    List<String> pathAliases = const [],
     List<RouteBase> routes = const [],
     Widget Function(BuildContext, GoRouterState)? builder,
     Page<dynamic> Function(BuildContext, GoRouterState)? pageBuilder,
@@ -110,6 +109,7 @@ void main() {
       discardedBy: discardedBy,
       shieldOf: shieldOf,
       followUp: followUp,
+      pathAliases: pathAliases,
       routes: routes,
       builder: builder ?? simpleBuilder,
       pageBuilder: pageBuilder,
@@ -342,6 +342,239 @@ void main() {
           },
           throwsA(isA<MultipleFollowUpRouteException>()),
         );
+      });
+    });
+
+    group('pathAliases', () {
+      testWidgets("top-level alias redirects to the canonical path", (WidgetTester tester) async {
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/alias",
+          guards: [],
+          routes: [
+            _goRoute("canonical", pathAliases: ["alias"]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/canonical");
+      });
+
+      testWidgets("nested alias redirects and keeps path/query parameters", (WidgetTester tester) async {
+        final router = await pumpRouter(
+          tester,
+          guards: [],
+          routes: [
+            _goRoute(
+              "parent",
+              path: "/parent/:id",
+              routes: [
+                _goRoute("child", pathAliases: ["kid"]),
+              ],
+            ),
+          ],
+        );
+
+        router.go("/parent/42/kid?tab=profile");
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/parent/42/child?tab=profile");
+      });
+
+      testWidgets("pathAliases require a non-empty route name", (WidgetTester tester) async {
+        final route = GuardAwareGoRoute(
+          path: "/canonical",
+          pathAliases: const ["alias"],
+          builder: simpleBuilder,
+        );
+
+        expect(
+          () async {
+            await pumpRouter(
+              tester,
+              guards: [],
+              routes: [route],
+            );
+          },
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      testWidgets("guarded alias redirects to shield with continue using canonical path", (WidgetTester tester) async {
+        final guard = Guard1();
+        reset(guard);
+        activateGuard(guard: guard);
+
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/kid",
+          guards: [guard],
+          routes: [
+            _goRoute("shield1", shieldOf: [Guard1]),
+            _guardShell<Guard1>([
+              _goRoute("child", pathAliases: ["kid"]),
+            ]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/shield1?continue=/child");
+      });
+
+      testWidgets("guarded alias with path params stores resolved continue path", (WidgetTester tester) async {
+        final guard = Guard1();
+        reset(guard);
+        activateGuard(guard: guard);
+
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/kid/7",
+          guards: [guard],
+          routes: [
+            _goRoute("shield1", shieldOf: [Guard1]),
+            _guardShell<Guard1>([
+              _goRoute("child", path: "child/:id", pathAliases: ["kid/:id"]),
+            ]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/shield1?continue=/child/7");
+      });
+
+      testWidgets("discarded alias resolves to followUp when guard passes", (WidgetTester tester) async {
+        final guard = Guard1();
+        reset(guard);
+        deactivateGuard(guard: guard);
+
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/kid",
+          guards: [guard],
+          routes: [
+            _goRoute("shield1", shieldOf: [Guard1]),
+            _goRoute("followUp", followUp: [Guard1]),
+            _goRoute("child", discardedBy: [Guard1], pathAliases: ["kid"]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/followUp");
+      });
+
+      testWidgets("explicit navigation to active shield alias ends at shield", (WidgetTester tester) async {
+        final guard = Guard1();
+        reset(guard);
+        activateGuard(guard: guard);
+
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/bulwark",
+          guards: [guard],
+          routes: [
+            _goRoute("shield", shieldOf: [Guard1], pathAliases: ["bulwark"]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/shield");
+      });
+
+      testWidgets("followUp alias still resolves to followUp canonical path", (WidgetTester tester) async {
+        final guard = Guard1();
+        reset(guard);
+        deactivateGuard(guard: guard);
+
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/kid",
+          guards: [guard],
+          routes: [
+            _goRoute("shield1", shieldOf: [Guard1]),
+            _goRoute("followUp", followUp: [Guard1], pathAliases: ["after"]),
+            _goRoute("child", discardedBy: [Guard1], pathAliases: ["kid"]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/followUp");
+      });
+
+      testWidgets("discard shell alias redirects to followUp when guard passes", (WidgetTester tester) async {
+        final guard = Guard1();
+        reset(guard);
+        deactivateGuard(guard: guard);
+
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/kid",
+          guards: [guard],
+          routes: [
+            _goRoute("shield1", shieldOf: [Guard1]),
+            _discardShell<Guard1>([
+              _goRoute("child", pathAliases: ["kid"]),
+            ]),
+            _goRoute("followUp", followUp: [Guard1]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/followUp");
+      });
+
+      testWidgets("absolute alias for nested route redirects to nested canonical path", (WidgetTester tester) async {
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/kid",
+          guards: [],
+          routes: [
+            _goRoute(
+              "parent",
+              path: "/parent",
+              routes: [
+                _goRoute("child", pathAliases: ["/kid"]),
+              ],
+            ),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/parent/child");
+      });
+
+      testWidgets("top-level alias preserves initial query params", (WidgetTester tester) async {
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/alias?foo=bar",
+          guards: [],
+          routes: [
+            _goRoute("canonical", pathAliases: ["alias"]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/canonical?foo=bar");
+      });
+
+      testWidgets("alias respects ignoreAsContinueLocation when guarded", (WidgetTester tester) async {
+        final guard = Guard1();
+        reset(guard);
+        activateGuard(guard: guard);
+
+        final router = await pumpRouter(
+          tester,
+          initialLocation: "/kid",
+          guards: [guard],
+          routes: [
+            _goRoute("shield1", shieldOf: [Guard1]),
+            _guardShell<Guard1>([
+              _goRoute("child", pathAliases: ["kid"], ignoreAsContinueLocation: true),
+            ]),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+        expect(router.location.sanitized, "/shield1");
       });
     });
 
