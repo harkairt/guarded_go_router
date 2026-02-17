@@ -272,10 +272,10 @@ extension RouteBaseListX on List<RouteBase> {
     return result.toList();
   }
 
-  void printTree(int depth) {
+  void printTree({int depth = 0, LogCallback? logger}) {
     for (final route in this) {
-      debugPrint("${"   " * depth}$route");
-      route.routes.printTree(depth + 1);
+      logger?.call("${"   " * depth}$route");
+      route.routes.printTree(depth: depth + 1, logger: logger);
     }
   }
 
