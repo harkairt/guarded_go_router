@@ -209,7 +209,10 @@ class GuardedGoRouter {
           return null;
         }
 
-        return state.maybeResolveContinuePath();
+        final resolvedContinuePath = state.maybeResolveContinuePath();
+        if (resolvedContinuePath != null) {
+          return resolvedContinuePath;
+        }
       }
     }
 
