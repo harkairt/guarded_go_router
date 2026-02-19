@@ -2166,6 +2166,51 @@ void main() {
           await tester.pumpAndSettle();
           expect(router.location.sanitized, "/home");
         });
+
+        testWidgets('interactive flow resolves continue path through sequentially dependent guards', (WidgetTester tester) async {
+          activateGuard(guard: guard1);
+          activateGuard(guard: guard2);
+
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1, guard2],
+            routes: [
+              _goRoute(
+                "shield1",
+                shieldOf: [Guard1],
+                discardedBy: [Guard1],
+                routes: [
+                  _goRoute(
+                    "shield2",
+                    followUp: [Guard1],
+                    discardedBy: [Guard2],
+                    shieldOf: [Guard2],
+                  ),
+                ],
+              ),
+              _guardShell<Guard1>([
+                _guardShell<Guard2>([
+                  _goRoute(
+                    "home",
+                    followUp: [Guard2],
+                  ),
+                ]),
+              ]),
+            ],
+          );
+
+          router.go("/home");
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/shield1?continue=/home");
+
+          deactivateGuard(guard: guard1);
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/shield1/shield2?continue=/home");
+
+          deactivateGuard(guard: guard2);
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/home");
+        });
       });
     });
 
