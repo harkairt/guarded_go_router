@@ -1443,6 +1443,228 @@ void main() {
             expect(router.location.sanitized, "/shield4?continue=/home");
           });
 
+          testWidgets("even if destination is the shield of an enclosing passing guard, first blocking middle guard wins", (
+            WidgetTester tester,
+          ) async {
+            reset(guard1);
+            deactivateGuard(guard: guard1);
+            reset(guard2);
+            deactivateGuard(guard: guard2);
+            reset(guard3);
+            activateGuard(guard: guard3);
+            reset(guard4);
+            deactivateGuard(guard: guard4);
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3, guard4],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("shield4", shieldOf: [Guard4]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _guardShell<Guard4>([
+                        _goRoute("home", shieldOf: [Guard2]),
+                      ]),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/home");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield3?continue=/home");
+          });
+
+          testWidgets("even if destination is the shield of an enclosing passing guard, first of multiple blocking guards wins",
+              (
+            WidgetTester tester,
+          ) async {
+            reset(guard1);
+            deactivateGuard(guard: guard1);
+            reset(guard2);
+            deactivateGuard(guard: guard2);
+            reset(guard3);
+            activateGuard(guard: guard3);
+            reset(guard4);
+            activateGuard(guard: guard4);
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3, guard4],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("shield4", shieldOf: [Guard4]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _guardShell<Guard4>([
+                        _goRoute("home", shieldOf: [Guard2]),
+                      ]),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/home");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield3?continue=/home");
+          });
+
+          testWidgets(
+              "even if destination is the shield of the outermost passing guard, later blocking guard redirects", (
+            WidgetTester tester,
+          ) async {
+            reset(guard1);
+            deactivateGuard(guard: guard1);
+            reset(guard2);
+            activateGuard(guard: guard2);
+            reset(guard3);
+            deactivateGuard(guard: guard3);
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _goRoute("home", shieldOf: [Guard1]),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/home");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield2?continue=/home");
+          });
+
+          testWidgets(
+              "even if destination is the shield of multiple passing enclosing guards, blocking guard after all of them redirects",
+              (
+            WidgetTester tester,
+          ) async {
+            reset(guard1);
+            deactivateGuard(guard: guard1);
+            reset(guard2);
+            deactivateGuard(guard: guard2);
+            reset(guard3);
+            deactivateGuard(guard: guard3);
+            reset(guard4);
+            activateGuard(guard: guard4);
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3, guard4],
+              routes: [
+                _goRoute("shield2", shieldOf: [Guard2]),
+                _goRoute("shield4", shieldOf: [Guard4]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _guardShell<Guard4>([
+                        _goRoute("home", shieldOf: [Guard1, Guard3]),
+                      ]),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/home");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield4?continue=/home");
+          });
+
+          testWidgets(
+              "even if destination is the shield of an enclosing passing guard, immediately enclosing blocking guard redirects",
+              (
+            WidgetTester tester,
+          ) async {
+            reset(guard1);
+            deactivateGuard(guard: guard1);
+            reset(guard2);
+            deactivateGuard(guard: guard2);
+            reset(guard3);
+            activateGuard(guard: guard3);
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _goRoute("home", shieldOf: [Guard2]),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/home");
+
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield3?continue=/home");
+          });
+
+          testWidgets(
+              "even if destination is the shield of an enclosing passing guard, deactivating blocking guard allows reaching destination",
+              (
+            WidgetTester tester,
+          ) async {
+            reset(guard1);
+            deactivateGuard(guard: guard1);
+            reset(guard2);
+            deactivateGuard(guard: guard2);
+            reset(guard3);
+            deactivateGuard(guard: guard3);
+            reset(guard4);
+            activateGuard(guard: guard4);
+            final router = await pumpRouter(
+              tester,
+              guards: [guard1, guard2, guard3, guard4],
+              routes: [
+                _goRoute("shield1", shieldOf: [Guard1]),
+                _goRoute("shield3", shieldOf: [Guard3]),
+                _goRoute("shield4", shieldOf: [Guard4]),
+                _goRoute("anotherPage"),
+                _guardShell<Guard1>([
+                  _guardShell<Guard2>([
+                    _guardShell<Guard3>([
+                      _guardShell<Guard4>([
+                        _goRoute("home", shieldOf: [Guard2]),
+                      ]),
+                    ]),
+                  ]),
+                ]),
+              ],
+            );
+
+            router.go("/home");
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/shield4?continue=/home");
+
+            deactivateGuard(guard: guard4);
+            await tester.pumpAndSettle();
+            expect(router.location.sanitized, "/home");
+          });
+
           group('DestinationPersistence', () {
             group('store', () {
               testWidgets("without overriding continue param if going with an existing continue param",
