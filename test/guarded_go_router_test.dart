@@ -1444,7 +1444,8 @@ void main() {
             expect(router.location.sanitized, "/shield4?continue=/home");
           });
 
-          testWidgets("even if destination is the shield of an enclosing passing guard, first blocking middle guard wins", (
+          testWidgets(
+              "even if destination is the shield of an enclosing passing guard, first blocking middle guard wins", (
             WidgetTester tester,
           ) async {
             reset(guard1);
@@ -1481,7 +1482,8 @@ void main() {
             expect(router.location.sanitized, "/shield3?continue=/home");
           });
 
-          testWidgets("even if destination is the shield of an enclosing passing guard, first of multiple blocking guards wins",
+          testWidgets(
+              "even if destination is the shield of an enclosing passing guard, first of multiple blocking guards wins",
               (
             WidgetTester tester,
           ) async {
@@ -2127,6 +2129,42 @@ void main() {
 
           await tester.pumpAndSettle();
           expect(router.location.sanitized, "/route");
+        });
+
+        testWidgets('then resolve continue path even when enclosed by sequentially dependent passing guards', (WidgetTester tester) async {
+          final router = await pumpRouter(
+            tester,
+            guards: [guard1, guard2],
+            routes: [
+              _goRoute(
+                "shield1",
+                shieldOf: [Guard1],
+                discardedBy: [Guard1],
+                routes: [
+                  _goRoute(
+                    "shield2",
+                    followUp: [Guard1],
+                    discardedBy: [Guard2],
+                    shieldOf: [Guard2],
+                  ),
+                ],
+              ),
+              _guardShell<Guard1>([
+                _guardShell<Guard2>([
+                  _goRoute(
+                    "home",
+                    followUp: [Guard2],
+                  ),
+                ]),
+              ]),
+            ],
+          );
+
+          // router.go("/home");
+          router.go("/shield2?continue=/home");
+
+          await tester.pumpAndSettle();
+          expect(router.location.sanitized, "/home");
         });
       });
     });
