@@ -43,6 +43,7 @@ void main() {
     final guardedRouter = GuardedGoRouter(
       guards: guards,
       routes: routes,
+      logger: (message, {error, stackTrace}) => debugPrint(message),
       buildRouter: (routes, rootRedirect) {
         return GoRouter(
           redirect: rootRedirect,
