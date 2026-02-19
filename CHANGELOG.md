@@ -1,3 +1,7 @@
+## 0.0.14
+
+- fix: properly evaluate every enclosing guard even if destination is shield of a passing guard
+
 ## 0.0.13
 
 - fix: improve path sanitization
