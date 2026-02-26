@@ -1,10 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:guarded_go_router/guarded_go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-// Import legacy providers for Riverpod 3.0
-import 'package:hooks_riverpod/legacy.dart';
-// Import ProviderListenable from misc.dart
-import 'package:hooks_riverpod/misc.dart' show ProviderListenable;
 
 // Example providers
 final authStateProvider = StateProvider<bool>((ref) => false);

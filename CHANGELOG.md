@@ -1,3 +1,7 @@
+## 0.0.16
+
+- chore: revert back to riverpod 2
+
 ## 0.0.15
 
 - fix: cover continue path resolution for sequential Guard1→Guard2 flow in nested and flattened shield

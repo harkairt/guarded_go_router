@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:guarded_go_router/src/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-// Import ProviderListenable from misc.dart for Riverpod 3.0
-import 'package:hooks_riverpod/misc.dart' show ProviderListenable;
 
 class GoNotifier extends ChangeNotifier {
   final Ref _ref;
