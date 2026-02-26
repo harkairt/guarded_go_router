@@ -1,3 +1,7 @@
+## 0.0.15
+
+- fix: cover continue path resolution for sequential Guard1→Guard2 flow in nested and flattened shield
+
 ## 0.0.14
 
 - fix: properly evaluate every enclosing guard even if destination is shield of a passing guard

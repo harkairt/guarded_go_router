@@ -90,6 +90,13 @@ class GuardedGoRouter {
         state: state,
         fn: (context, state) {
           logger?.call("👉🏻👉🏻👉🏻 ${state.uri.toString().sanitized}");
+          final hasResolvedRoute = (state.topRoute?.name ?? state.name) != null;
+          if (!hasResolvedRoute) {
+            final continuePath = state.maybeResolveContinuePath();
+            if (continuePath != null) {
+              return continuePath;
+            }
+          }
           return null;
         },
         relay: (context, state) {
@@ -168,13 +175,13 @@ class GuardedGoRouter {
         throw FollowUpRouteMissingException(discardingGuards.first.runtimeType);
       }
 
-      if (isParentOf(routeName: thisName, maybeParentRouteName: firstFollowUpRouteName)) {
-        return null;
-      }
-
       final resolvedContinuePath = state.maybeResolveContinuePath();
       if (resolvedContinuePath != null) {
         return resolvedContinuePath;
+      }
+
+      if (isParentOf(routeName: thisName, maybeParentRouteName: firstFollowUpRouteName)) {
+        return null;
       }
 
       return goRouter.namedLocationFrom(
