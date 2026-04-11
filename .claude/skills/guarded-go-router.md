@@ -14,13 +14,14 @@ Use this skill when working with the `guarded_go_router` package — adding guar
 
 ## The three route roles
 
-Every route in the protected tree plays one or more roles:
+There are two distinct constructs. `GuardShell<T>` wraps a subtree; `goRoute()` params annotate individual routes:
 
 ```
-GuardShell<T>  →  route is PROTECTED by guard T
-  shieldOf: [T]   →  route RESOLVES guard T (the login/setup screen)
-  discardedBy: [T] →  route is IRRELEVANT when guard T passes (e.g. /welcome once logged in)
-  followUp: [T]   →  route is the DESTINATION from discarded routes when guard T passes
+GuardShell<T>([...])          — wraps a subtree: every child is PROTECTED by guard T
+
+goRoute(..., shieldOf: [T])   — this route RESOLVES guard T (e.g. the login screen)
+goRoute(..., discardedBy: [T])— this route is IRRELEVANT when guard T passes (e.g. /welcome)
+goRoute(..., followUp: [T])   — redirect here from discarded routes when guard T passes
 ```
 
 Rules enforced at construction (throws immediately, not at runtime):
