@@ -1,3 +1,7 @@
+## 0.0.17
+
+- feat: RouteId data class
+
 ## 0.0.16
 
 - chore: revert back to riverpod 2
